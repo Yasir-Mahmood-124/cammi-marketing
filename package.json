@@ -1,0 +1,48 @@
+{
+  "name": "caami-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/roboto": "^5.2.8",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.4",
+    "@mui/x-date-pickers": "^8.14.1",
+    "@reduxjs/toolkit": "^2.9.0",
+    "dayjs": "^1.11.18",
+    "js-cookie": "^3.0.5",
+    "lucide-react": "^0.548.0",
+    "mammoth": "^1.11.0",
+    "next": "15.5.3",
+    "notistack": "^3.0.2",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.5.0",
+    "react-redux": "^9.2.0",
+    "recharts": "^3.3.0",
+    "redux-persist": "^6.0.0",
+    "sass": "^1.94.2",
+    "typeface-glacial-indifference": "^1.1.14"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@svgr/webpack": "^8.1.0",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/recharts": "^1.8.29",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.3",
+    "typescript": "^5"
+  }
+}
