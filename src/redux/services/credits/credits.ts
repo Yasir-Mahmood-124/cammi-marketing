@@ -1,6 +1,6 @@
 // src/redux/services/credits/credits.ts
-
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { customBaseQuery } from "../customBaseQuery";
 
 // 🔹 Define the response type
 interface CreditsResponse {
@@ -15,19 +15,13 @@ interface CreditsRequest {
 // 🔹 Create the RTK Query API
 export const creditsApi = createApi({
   reducerPath: "creditsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: customBaseQuery, // ✅ use central base query
   endpoints: (builder) => ({
     updateTotalCredits: builder.mutation<CreditsResponse, CreditsRequest>({
       query: (body) => ({
-        url: "total_credits_update",
+        url: "/dashboard/total-credits-update",
         method: "POST",
-        body,
+        body, // headers handled in customBaseQuery
       }),
     }),
   }),

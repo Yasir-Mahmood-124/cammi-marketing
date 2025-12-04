@@ -1,6 +1,7 @@
-//src/services/document/documentInfoApi.ts
+// src/services/document/documentInfoApi.ts
 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { customBaseQuery } from "../customBaseQuery";
 
 export interface DocumentInfoRequest {
   user_id: string;
@@ -18,20 +19,14 @@ export interface DocumentInfoResponse {
 
 export const documentInfoApi = createApi({
   reducerPath: "documentInfoApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: customBaseQuery, // ✅ use shared base query
   endpoints: (builder) => ({
     documentInfo: builder.mutation<
       DocumentInfoResponse,
       DocumentInfoRequest
     >({
       query: (body) => ({
-        url: `/document-info`,
+        url: `/dashboard/document-info`,
         method: "POST",
         body,
       }),

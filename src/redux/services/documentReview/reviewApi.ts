@@ -1,5 +1,7 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// redux/services/reviewApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
 import Cookies from "js-cookie";
+import { customBaseQuery } from "../customBaseQuery"; // import your custom base query
 
 export interface Review {
   id: number;
@@ -12,21 +14,18 @@ export interface Review {
 
 export const reviewApi = createApi({
   reducerPath: "reviewApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl:
-      "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
-  }),
+  baseQuery: customBaseQuery, // use custom base query
   endpoints: (builder) => ({
     getReviews: builder.mutation<Review[], void>({
-      // change to mutation for POST
+      // Using mutation for POST
       query: () => {
         const sessionId = Cookies.get("token");
         if (!sessionId) {
           console.warn("Session token not found in cookies!");
         }
         return {
-          url: "get-specific-review-documents",
-          method: "POST", // send body
+          url: "/dashboard/view-review-documents-status",
+          method: "POST",
           body: {
             session_id: sessionId,
           },
@@ -37,5 +36,3 @@ export const reviewApi = createApi({
 });
 
 export const { useGetReviewsMutation } = reviewApi;
-
-// export const { useGetReviewsQuery } = reviewApi;

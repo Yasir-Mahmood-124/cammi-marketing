@@ -1,6 +1,7 @@
-//src/redux/document/editDocumentNameApi.ts
+// src/redux/document/editDocumentNameApi.ts
 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { customBaseQuery } from "../customBaseQuery";
 
 export interface EditDocumentNameRequest {
   user_id: string;
@@ -22,20 +23,14 @@ export interface EditDocumentNameResponse {
 
 export const editDocumentNameApi = createApi({
   reducerPath: "editDocumentNameApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: customBaseQuery, // ✅ use shared base query
   endpoints: (builder) => ({
     editDocumentName: builder.mutation<
       EditDocumentNameResponse,
       EditDocumentNameRequest
     >({
       query: (body) => ({
-        url: `/edit-document-name`,
+        url: `/dashboard/edit-document-name`,
         method: "PUT",
         body,
       }),

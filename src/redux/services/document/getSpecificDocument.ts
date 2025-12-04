@@ -1,5 +1,6 @@
 // src/redux/services/document/getSpecificDocument.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { customBaseQuery } from "../customBaseQuery";
 
 export interface GetSpecificDocumentRequest {
   user_id: string;
@@ -15,23 +16,16 @@ export interface GetSpecificDocumentResponse {
 
 export const getSpecificDocumentApi = createApi({
   reducerPath: "getSpecificDocumentApi",
-
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-  }),
-
+  baseQuery: customBaseQuery, // ✅ use central base query
   endpoints: (builder) => ({
     getSpecificDocument: builder.mutation<
       GetSpecificDocumentResponse,
       GetSpecificDocumentRequest
     >({
       query: (body) => ({
-        url: "/get_specific_document_against_user",
+        url: "/dashboard/view-specific-documents",
         method: "POST",
-        body,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        body, // headers handled in customBaseQuery
       }),
     }),
   }),
