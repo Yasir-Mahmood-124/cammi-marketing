@@ -1,12 +1,11 @@
-// src/redux/services/documents/documentsApi.ts
-import { createApi } from '@reduxjs/toolkit/query/react';
-import { customBaseQuery } from '../customBaseQuery';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // Define the Document type based on your API response
 export interface UserDocument {
   document_name: string;
   id: string;
   name: string;
+  // Add other fields from your API response as needed
   createdAt?: string;
   updatedAt?: string;
   // ... other fields
@@ -23,14 +22,20 @@ interface GetDocumentsResponse {
 
 export const documentsApi = createApi({
   reducerPath: 'documentsApi',
-  baseQuery: customBaseQuery, // ✅ use central base query
+  baseQuery: fetchBaseQuery({
+    baseUrl: 'https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev',
+    prepareHeaders: (headers) => {
+      headers.set('Content-Type', 'application/json');
+      return headers;
+    },
+  }),
   tagTypes: ['Documents'],
   endpoints: (builder) => ({
     getUserDocuments: builder.mutation<GetDocumentsResponse, GetDocumentsRequest>({
       query: (body) => ({
-        url: '/dashboard/view-all-documents',
+        url: '/get_all_documents_against_user',
         method: 'POST',
-        body, // headers handled in customBaseQuery
+        body,
       }),
       invalidatesTags: ['Documents'],
     }),

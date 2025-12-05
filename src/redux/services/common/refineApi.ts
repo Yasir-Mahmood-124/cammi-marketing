@@ -1,6 +1,5 @@
-// redux/services/common/refineApi.ts
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { customBaseQuery } from "../customBaseQuery";
+//redux/services/common/refineApi.ts
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 interface RefineRequest {
   prompt: string;
@@ -15,31 +14,18 @@ interface RefineResponse {
 
 export const refineApi = createApi({
   reducerPath: "refineApi",
-  baseQuery: async (args, api, extraOptions) => {
-    const modifiedBaseQuery = customBaseQuery;
-
-    // Merge per-request headers if session_id is provided
-    if (typeof args === "object") {
-      const { session_id } = args as any;
-      const headers: Record<string, string> = {};
-      if (session_id) headers["session_id"] = session_id;
-
-      if ("headers" in args) {
-        args.headers = { ...headers, ...args.headers };
-      } else {
-        (args as any).headers = headers;
-      }
-    }
-
-    return modifiedBaseQuery(args, api, extraOptions);
-  },
+  baseQuery: fetchBaseQuery({
+    baseUrl: "https://ogcvp659ah.execute-api.us-east-1.amazonaws.com/cammi-refine/",
+  }),
   endpoints: (builder) => ({
     refine: builder.mutation<RefineResponse, RefineRequest>({
       query: (body) => ({
-        url: "refine", // baseUrl already has trailing /
+        url: "refine", // if baseUrl already ends with /, no need to add it here
         method: "POST",
         body,
-        // headers will be injected in baseQuery
+        headers: {
+          "Content-Type": "application/json",
+        },
       }),
     }),
   }),

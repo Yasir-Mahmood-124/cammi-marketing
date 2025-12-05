@@ -1,6 +1,5 @@
 // src/redux/services/common/getQuestionsApi.ts
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { customBaseQuery } from "../customBaseQuery";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 interface Question {
   question_id: string;
@@ -20,34 +19,18 @@ interface GetQuestionsResponse {
 
 export const getQuestionsApi = createApi({
   reducerPath: "getQuestionsApi",
-  baseQuery: async (args, api, extraOptions) => {
-    // Extend central customBaseQuery
-    const modifiedBaseQuery = customBaseQuery;
-
-    // Merge headers per request
-    if (typeof args === "object" && "headers" in args) {
-      args.headers = args.headers || {};
-    }
-
-    if (typeof args === "object") {
-      const { project_id, document_type } = args as any;
-      const headers: Record<string, string> = {};
-      if (project_id) headers["project_id"] = project_id;
-      if (document_type) headers["document_type"] = document_type;
-
-      args.headers = { ...headers, ...args.headers };
-    }
-
-    return modifiedBaseQuery(args, api, extraOptions);
-  },
+  baseQuery: fetchBaseQuery({
+    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
+  }),
   endpoints: (builder) => ({
     getQuestions: builder.query<GetQuestionsResponse, { project_id: string; document_type: string }>({
       query: ({ project_id, document_type }) => ({
         url: "/get-questions",
         method: "GET",
-        // headers will be injected in baseQuery
-        project_id,
-        document_type,
+        headers: {
+          project_id,
+          document_type,
+        },
       }),
     }),
   }),

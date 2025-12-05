@@ -1,7 +1,6 @@
-// src/redux/services/document/deleteDocumentApi.ts
+//src/redux/services/document/deleteDocumentApi.ts
 
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { customBaseQuery } from "../customBaseQuery";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface DeleteDocumentRequest {
   user_id: string;
@@ -20,14 +19,20 @@ export interface DeleteDocumentResponse {
 
 export const deleteDocumentApi = createApi({
   reducerPath: "deleteDocumentApi",
-  baseQuery: customBaseQuery, // ✅ use shared base query
+  baseQuery: fetchBaseQuery({
+    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
+    prepareHeaders: (headers) => {
+      headers.set("Content-Type", "application/json");
+      return headers;
+    },
+  }),
   endpoints: (builder) => ({
     deleteDocument: builder.mutation<
       DeleteDocumentResponse,
       DeleteDocumentRequest
     >({
       query: (body) => ({
-        url: `/dashboard/delete-document`,
+        url: `/delete-document`,
         method: "DELETE",
         body,
       }),

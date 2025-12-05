@@ -36,6 +36,9 @@ interface GTMState {
   // Flags for fetching
   shouldFetchUnanswered: boolean;
   shouldFetchAll: boolean;
+  
+  // GTM existence flag
+  gtmExists: boolean;
 }
 
 const initialState: GTMState = {
@@ -59,6 +62,7 @@ const initialState: GTMState = {
   fileName: "",
   shouldFetchUnanswered: false,
   shouldFetchAll: false,
+  gtmExists: false,
 };
 
 const gtmSlice = createSlice({
@@ -219,6 +223,11 @@ const gtmSlice = createSlice({
       state.shouldFetchAll = action.payload;
     },
     
+    // 🆕 New action to set GTM existence flag
+    setGtmExists: (state, action: PayloadAction<boolean>) => {
+      state.gtmExists = action.payload;
+    },
+    
     resetGTMState: (state) => {
       return initialState;
     },
@@ -247,6 +256,7 @@ const gtmSlice = createSlice({
       state.fileName = "";
       state.shouldFetchUnanswered = false;
       state.shouldFetchAll = false;
+      state.gtmExists = false;
     },
   },
 });
@@ -278,6 +288,7 @@ export const {
   setDocumentData,
   setShouldFetchUnanswered,
   setShouldFetchAll,
+  setGtmExists,
   resetGTMState,
   resetForNewDocument,
 } = gtmSlice.actions;

@@ -1,18 +1,16 @@
-// redux/services/common/onboardingApi.ts
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { customBaseQuery } from "../customBaseQuery";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const onboardingApi = createApi({
   reducerPath: "onboardingApi",
-  baseQuery: customBaseQuery, // ✅ use central base query
+  baseQuery: fetchBaseQuery({
+    baseUrl:
+      "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
+  }),
   endpoints: (builder) => ({
     // Submit answer mutation
-    submitAnswer: builder.mutation<
-      any, // replace with proper response type if available
-      { session_id: string; question: string; answer: string }
-    >({
+    submitAnswer: builder.mutation({
       query: ({ session_id, question, answer }) => ({
-        url: "/onboarding/user-onboarding", // baseUrl already has trailing /
+        url: "onboarding",
         method: "POST",
         body: { session_id, question, answer },
       }),

@@ -1,6 +1,5 @@
 // src/redux/services/settings/profileSettings.ts
-import { createApi } from "@reduxjs/toolkit/query/react";
-import { customBaseQuery } from "../customBaseQuery";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // 🔹 Define request body type
 export interface EditProfileRequest {
@@ -9,23 +8,28 @@ export interface EditProfileRequest {
   picture: string; // base64 string
 }
 
-// 🔹 Define response type
+// 🔹 Define response type (you can refine it later if you know the structure)
 export interface EditProfileResponse {
   message?: string;
   success?: boolean;
-  [key: string]: any; // handle extra unknown keys
+  [key: string]: any; // to handle extra unknown keys
 }
 
 // 🔹 Create the RTK Query API
 export const profileSettingsApi = createApi({
   reducerPath: "profileSettingsApi",
-  baseQuery: customBaseQuery, // ✅ use central base query
+  baseQuery: fetchBaseQuery({
+    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
+  }),
   endpoints: (builder) => ({
     editProfile: builder.mutation<EditProfileResponse, EditProfileRequest>({
       query: (body) => ({
-        url: "/profile/edit-profile",
+        url: "/edit-profile",
         method: "POST",
-        body, // headers already handled in customBaseQuery
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body,
       }),
     }),
   }),

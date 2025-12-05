@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Box, Typography, Button, Checkbox, FormControlLabel, Paper } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Paper,
+} from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
@@ -21,6 +28,12 @@ const DOCUMENT_TYPES = [
     label: "Market Research",
     description: "In-depth analysis of market trends and opportunities",
   },
+  {
+    id: "gtm-targetmarket",
+    label: "Target Market",
+    description: "Detailed analysis of target customer segments and personas",
+  },
+
   {
     id: "gtm-brand",
     label: "Brand",
@@ -140,7 +153,9 @@ const DocumentSelection: React.FC<DocumentSelectionProps> = ({ onConfirm }) => {
                   padding: "20px",
                   borderRadius: "12px",
                   cursor: "pointer",
-                  border: isSelected ? "2px solid #3EA3FF" : "2px solid #E0E0E0",
+                  border: isSelected
+                    ? "2px solid #3EA3FF"
+                    : "2px solid #E0E0E0",
                   backgroundColor: isSelected ? "#F0F8FF" : "#FFFFFF",
                   transition: "all 0.3s ease",
                   position: "relative",
