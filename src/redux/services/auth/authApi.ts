@@ -1,28 +1,18 @@
-// redux/services/auth/authApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 import { LoginResponse, LoginRequest } from "@/types/auth";
-const BASE_URL =
-  "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev";
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: baseApiQuery,   // ⬅️ shared base query used here
   endpoints: (builder) => ({
-    // ✅ Register now accepts firstName + lastName
     register: builder.mutation<
       { message: string },
       { firstName: string; lastName: string; email: string; password: string }
     >({
-      query: (body) => ({ url: "/register", method: "POST", body }),
+      query: (body) => ({ url: "/auth/register", method: "POST", body }),
     }),
 
-    // ✅ VerifyEmail response updated with firstName + lastName if backend returns them
     verifyEmail: builder.mutation<
       {
         message: string;
@@ -35,32 +25,31 @@ export const authApi = createApi({
       },
       { email: string; code: string }
     >({
-      query: (body) => ({ url: "/verify-email", method: "POST", body }),
+      query: (body) => ({ url: "/auth/verify-email", method: "POST", body }),
     }),
 
-    // ✅ Login response updated with full user info
     login: builder.mutation<LoginResponse, LoginRequest>({
-      query: (body) => ({ url: "/login", method: "POST", body }),
+      query: (body) => ({ url: "/auth/login", method: "POST", body }),
     }),
 
     googleLogin: builder.mutation<LoginResponse, { tokenId: string }>({
       query: (body) => ({
-        url: "/google-login",
+        url: "/auth/google-login",
         method: "POST",
-        body, // { tokenId } from Google OAuth
+        body,
       }),
     }),
 
     logout: builder.mutation<{ message: string }, { token: string }>({
       query: ({ token }) => ({
-        url: "/logout",
+        url: "/auth/logout",
         method: "POST",
         body: { token },
       }),
     }),
 
     forgotPassword: builder.mutation<{ message: string }, { email: string }>({
-      query: (body) => ({ url: "/forgot-password", method: "POST", body }),
+      query: (body) => ({ url: "/auth/forgot-password", method: "POST", body }),
     }),
 
     resetPassword: builder.mutation<
@@ -72,18 +61,14 @@ export const authApi = createApi({
         confirmPassword: string;
       }
     >({
-      query: (body) => ({ url: "/reset-password", method: "POST", body }),
+      query: (body) => ({ url: "/auth/reset-password", method: "POST", body }),
     }),
 
     verifyCode: builder.mutation<
       { message: string },
       { email: string; code: string }
     >({
-      query: (body) => ({
-        url: "/verify-code",
-        method: "POST",
-        body,
-      }),
+      query: (body) => ({ url: "/auth/verify-code", method: "POST", body }),
     }),
   }),
 });

@@ -625,9 +625,20 @@ const BSPage: React.FC = () => {
 
       const dynamicFileName = "businessidea.txt";
       const savedToken = Cookies.get("token");
+
+      if (!savedToken) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+
       const project_id = JSON.parse(
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
+
+      if (!project_id) {
+        toast.error("Project ID not found. Please select a project.");
+        return;
+      }
 
       const textContent = questions
         .map((q) => `Q: ${q.question}\nA: ${q.answer}`)
@@ -652,13 +663,60 @@ const BSPage: React.FC = () => {
         error: "Failed to upload answers. Please try again.",
       });
 
-      const websocketUrl = `wss://4iqvtvmxle.execute-api.us-east-1.amazonaws.com/prod/?session_id=${savedToken}`;
+      // 🔥 Use environment variable for WebSocket URL (same as all others)
+      const baseWsUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL;
 
+      if (!baseWsUrl) {
+        console.error(
+          "❌ [BS] WebSocket URL not configured in environment variables"
+        );
+        toast.error("WebSocket configuration missing. Please contact support.");
+        return;
+      }
+
+      // Construct full WebSocket URL with session_id
+      const websocketUrl = `${baseWsUrl}?session_id=${savedToken}`;
+
+      console.log(
+        "╔════════════════════════════════════════════════════════════╗"
+      );
+      console.log(
+        "║          🚀 STARTING BS DOCUMENT GENERATION               ║"
+      );
+      console.log(
+        "╚════════════════════════════════════════════════════════════╝"
+      );
+      console.log("🔌 [BS] Base WebSocket URL:", baseWsUrl);
+      console.log("🔌 [BS] Full WebSocket URL:", websocketUrl);
+      console.log(
+        "🔑 [BS] Session Token:",
+        savedToken ? "✅ Present" : "❌ Missing"
+      );
+      console.log("📦 [BS] Project ID:", project_id);
+      console.log("📦 [BS] Dispatching Redux actions...");
+
+      // 🔥 Set URL FIRST
       dispatch(setWsUrl(websocketUrl));
+
+      console.log("✅ [BS] wsUrl dispatched to Redux");
+
+      // Small delay to ensure Redux state propagates
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 🔥 Then set isGenerating
       dispatch(setIsGenerating(true));
+
+      console.log("✅ [BS] isGenerating=true dispatched to Redux");
+      console.log(
+        "⏳ [BS] Waiting for middleware to establish WebSocket connection..."
+      );
     } catch (err: any) {
       console.error("❌ [BS Upload] Error:", err);
       toast.error("Upload failed. Please try again.");
+
+      // Reset state on error
+      dispatch(setIsGenerating(false));
+      dispatch(setWsUrl(""));
     }
   };
 

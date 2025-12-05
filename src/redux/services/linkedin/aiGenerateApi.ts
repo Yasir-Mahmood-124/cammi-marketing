@@ -1,5 +1,6 @@
-//redux/services/linkedin/aiGenerateApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// redux/services/linkedin/aiGenerateApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 interface AIGenerateRequest {
   prompt: string;
@@ -14,18 +15,12 @@ interface AIGenerateResponse {
 
 export const aiGenerateApi = createApi({
   reducerPath: "aiGenerateApi",
-  baseQuery: fetchBaseQuery({
-    // baseUrl: "https://s248gcnoqb.execute-api.us-east-1.amazonaws.com/test/",
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
-  }),
+  baseQuery: baseApiQuery,
   endpoints: (builder) => ({
     generateIdea: builder.mutation<AIGenerateResponse, AIGenerateRequest>({
       query: (body) => ({
-        url: "idea-generate",
+        url: "/ai-generation/text-generation",
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body,
       }),
     }),

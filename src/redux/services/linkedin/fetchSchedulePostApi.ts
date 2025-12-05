@@ -1,4 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// src/redux/services/fetchSchedulePostApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi"; // import your centralized base query
 
 interface FetchSchedulePostRequest {
   sub: string;
@@ -11,20 +13,14 @@ interface FetchSchedulePostResponse {
 
 export const fetchSchedulePostApi = createApi({
   reducerPath: "fetchSchedulePostApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: baseApiQuery, // use centralized baseApiQuery
   endpoints: (builder) => ({
     fetchSchedulePost: builder.mutation<
       FetchSchedulePostResponse,
       FetchSchedulePostRequest
     >({
       query: (body) => ({
-        url: "/fetch-schedule-post",
+        url: "/calendar/fetch-post-linkedin", // endpoint path
         method: "POST",
         body,
       }),

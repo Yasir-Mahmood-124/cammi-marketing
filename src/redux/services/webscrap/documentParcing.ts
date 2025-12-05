@@ -1,5 +1,6 @@
-//src/redux/services/webscrap/documentParcing.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// src/redux/services/webscrap/documentParcing.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 // ✅ Define request body type
 interface DocumentParsingRequest {
@@ -16,21 +17,16 @@ interface DocumentParsingResponse {
   session_id: string;
 }
 
-// ✅ Create API slice
+// ✅ Create API slice using shared baseApiQuery
 export const documentParsingApi = createApi({
   reducerPath: "documentParsingApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-  }),
+  baseQuery: baseApiQuery,
   endpoints: (builder) => ({
     // POST request to frontend-to-s3 endpoint
     getUploadUrl: builder.mutation<DocumentParsingResponse, DocumentParsingRequest>({
       query: (body) => ({
-        url: "/frontend-to-s3",
+        url: "/brandsetup/upload", // this will be appended to BASE_URL from baseApiQuery
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body,
       }),
     }),

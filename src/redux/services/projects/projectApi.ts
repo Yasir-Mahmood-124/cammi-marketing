@@ -1,4 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// src/redux/services/projects/projectsApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 export interface CreateProjectPayload {
   organization_name: string;
@@ -16,13 +18,7 @@ export interface GetSpecificProjectsPayload {
 
 export const projectsApi = createApi({
   reducerPath: "projectsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: baseApiQuery, // ⭐ Using centralized base query
   endpoints: (builder) => ({
     // API 1: Create Project
     createProject: builder.mutation<
@@ -30,36 +26,36 @@ export const projectsApi = createApi({
       CreateProjectPayload
     >({
       query: (body) => ({
-        url: "/projects",
+        url: "/project-organization/projects",
         method: "POST",
         body,
       }),
     }),
 
-    // API 2: Get Organizations of a specific user (needs session_id header)
+    // API 2: Get Organizations of a specific user
     getSpecificOrganizations: builder.query<
       { message: string; organizations: any[] },
       GetSpecificOrganizationsPayload
     >({
       query: ({ session_id }) => ({
-        url: "/getSpecific-organizations",
+        url: "/project-organization/get-specific-organization",
         method: "GET",
         headers: {
-          session_id,
+          session_id, // session_id as header
         },
       }),
     }),
 
-    // API 3: Get Projects of a specific organization (needs organization_id header)
+    // API 3: Get Projects of a specific organization
     getSpecificProjects: builder.query<
       { message: string; projects: any[] },
       GetSpecificProjectsPayload
     >({
       query: ({ organization_id }) => ({
-        url: "/getSpecific-projects",
+        url: "/project-organization/get-specific-projects",
         method: "GET",
         headers: {
-          organization_id,
+          organization_id, // organization_id as header
         },
       }),
     }),

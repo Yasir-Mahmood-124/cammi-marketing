@@ -100,7 +100,7 @@ const DataUploadPage = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      
+
       if (validateFile(file)) {
         setSelectedFile(file);
         toast.success(`File selected: ${file.name}`);
@@ -120,13 +120,18 @@ const DataUploadPage = () => {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Check if we're leaving the actual drop zone, not just hovering over a child element
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
-    
-    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+
+    if (
+      x <= rect.left ||
+      x >= rect.right ||
+      y <= rect.top ||
+      y >= rect.bottom
+    ) {
       setIsDragging(false);
     }
   };
@@ -139,7 +144,7 @@ const DataUploadPage = () => {
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
-      
+
       if (validateFile(file)) {
         setSelectedFile(file);
         toast.success(`File selected: ${file.name}`);
@@ -188,7 +193,6 @@ const DataUploadPage = () => {
       return;
     }
 
-    // Validate session and project
     const session_id = validateSession();
     if (!session_id) return;
 
@@ -205,22 +209,26 @@ const DataUploadPage = () => {
         project_id: projectData.project_id,
       }).unwrap();
 
+      console.log("Upload URL response:", res);
+
       // Step 2: Upload file to S3
+      // ⚠️ IMPORTANT: Don't set Content-Type header here
+      // The presigned URL already includes it in query params
       const uploadResponse = await fetch(res.upload_url, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/pdf",
-        },
-        body: selectedFile,
+        body: selectedFile, // Remove headers entirely
       });
 
       if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error("S3 Upload Error:", errorText);
         throw new Error("Failed to upload file to S3");
       }
 
       toast.success("Document uploaded successfully!");
       setSelectedFile(null);
     } catch (error) {
+      console.error("Upload error:", error);
       toast.error("Failed to upload document. Please try again.");
     } finally {
       setUploading(false);
@@ -267,7 +275,8 @@ const DataUploadPage = () => {
               color: "#666",
             }}
           >
-            Import your website or documents to help us better tailor your experience and create results aligned with your business.
+            Import your website or documents to help us better tailor your
+            experience and create results aligned with your business.
           </Typography>
         </Box>
 
@@ -415,10 +424,10 @@ const DataUploadPage = () => {
               p: 4,
               textAlign: "center",
               cursor: uploading ? "not-allowed" : "pointer",
-              backgroundColor: isDragging 
-                ? "#e3f2fd" 
-                : selectedFile 
-                ? "#f0f7ff" 
+              backgroundColor: isDragging
+                ? "#e3f2fd"
+                : selectedFile
+                ? "#f0f7ff"
                 : "#fafafa",
               transition: "all 0.2s ease",
               opacity: uploading ? 0.6 : 1,

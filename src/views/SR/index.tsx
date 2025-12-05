@@ -58,7 +58,7 @@ const SRPage: React.FC = () => {
   const mountRecoveryTriggered = useRef(false);
   const hasCheckedForRefetch = useRef(false);
   const refetchTimestamp = useRef(Date.now());
-  
+
   // 🔥 NEW: Track if upload was interrupted
   const [wasUploadInterrupted, setWasUploadInterrupted] = useState(false);
 
@@ -92,13 +92,13 @@ const SRPage: React.FC = () => {
     // Check if upload was interrupted
     if (wasUploadInterrupted) {
       console.log("⚠️ [SR] Upload was interrupted - showing message");
-      
+
       // Show interruption message
       toast.error(
         "Document analysis was interrupted due to page navigation or refresh. Please upload again.",
         { duration: 5000 }
       );
-      
+
       // Reset the flag
       setWasUploadInterrupted(false);
     }
@@ -501,7 +501,10 @@ const SRPage: React.FC = () => {
 
     if (data.status === "analyzing_document") {
       // 🔥 FIXED: Use toast.loading with unique ID to prevent duplicates
-      toast.loading("Analyzing your document...", { id: "analyzing-doc", duration: Infinity });
+      toast.loading("Analyzing your document...", {
+        id: "analyzing-doc",
+        duration: Infinity,
+      });
       return;
     }
 
@@ -622,9 +625,20 @@ const SRPage: React.FC = () => {
 
       const dynamicFileName = "businessidea.txt";
       const savedToken = Cookies.get("token");
+
+      if (!savedToken) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+
       const project_id = JSON.parse(
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
+
+      if (!project_id) {
+        toast.error("Project ID not found. Please select a project.");
+        return;
+      }
 
       const textContent = questions
         .map((q) => `Q: ${q.question}\nA: ${q.answer}`)
@@ -649,13 +663,60 @@ const SRPage: React.FC = () => {
         error: "Failed to upload answers. Please try again.",
       });
 
-      const websocketUrl = `wss://4iqvtvmxle.execute-api.us-east-1.amazonaws.com/prod/?session_id=${savedToken}`;
+      // 🔥 Use environment variable for WebSocket URL (same as GTM, ICP, and KMF)
+      const baseWsUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL;
 
+      if (!baseWsUrl) {
+        console.error(
+          "❌ [SR] WebSocket URL not configured in environment variables"
+        );
+        toast.error("WebSocket configuration missing. Please contact support.");
+        return;
+      }
+
+      // Construct full WebSocket URL with session_id
+      const websocketUrl = `${baseWsUrl}?session_id=${savedToken}`;
+
+      console.log(
+        "╔════════════════════════════════════════════════════════════╗"
+      );
+      console.log(
+        "║          🚀 STARTING SR DOCUMENT GENERATION               ║"
+      );
+      console.log(
+        "╚════════════════════════════════════════════════════════════╝"
+      );
+      console.log("🔌 [SR] Base WebSocket URL:", baseWsUrl);
+      console.log("🔌 [SR] Full WebSocket URL:", websocketUrl);
+      console.log(
+        "🔑 [SR] Session Token:",
+        savedToken ? "✅ Present" : "❌ Missing"
+      );
+      console.log("📦 [SR] Project ID:", project_id);
+      console.log("📦 [SR] Dispatching Redux actions...");
+
+      // 🔥 Set URL FIRST
       dispatch(setWsUrl(websocketUrl));
+
+      console.log("✅ [SR] wsUrl dispatched to Redux");
+
+      // Small delay to ensure Redux state propagates
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 🔥 Then set isGenerating
       dispatch(setIsGenerating(true));
+
+      console.log("✅ [SR] isGenerating=true dispatched to Redux");
+      console.log(
+        "⏳ [SR] Waiting for middleware to establish WebSocket connection..."
+      );
     } catch (err: any) {
       console.error("❌ [SR Upload] Error:", err);
       toast.error("Upload failed. Please try again.");
+
+      // Reset state on error
+      dispatch(setIsGenerating(false));
+      dispatch(setWsUrl(""));
     }
   };
 
@@ -684,7 +745,13 @@ const SRPage: React.FC = () => {
 
   if (showDocumentPreview && docxBase64) {
     return (
-      <Box sx={{ height: 'calc(100vh - 10.96vh)', width: '100%', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          height: "calc(100vh - 10.96vh)",
+          width: "100%",
+          overflow: "hidden",
+        }}
+      >
         <DocumentPreview
           docxBase64={docxBase64}
           fileName={fileName}
@@ -800,7 +867,7 @@ const SRPage: React.FC = () => {
                 paddingLeft: "20px",
               }}
             >
-              <Box sx={{ width: "100%", }}>
+              <Box sx={{ width: "100%" }}>
                 {questions.some((q) => q.answer === "") && (
                   <Button
                     onClick={handleBackToQuestions}

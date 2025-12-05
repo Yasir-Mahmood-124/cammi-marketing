@@ -266,7 +266,9 @@ const GTMPage: React.FC = () => {
   // Safety check - Reset currentQuestionIndex if out of bounds
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= questions.length) {
-      console.log("⚠️ [GTM Safety] currentQuestionIndex out of bounds, resetting to 0");
+      console.log(
+        "⚠️ [GTM Safety] currentQuestionIndex out of bounds, resetting to 0"
+      );
       dispatch(setCurrentQuestionIndex(0));
     }
   }, [questions.length, currentQuestionIndex, dispatch]);
@@ -398,7 +400,10 @@ const GTMPage: React.FC = () => {
 
           savedCount++;
         } catch (error: any) {
-          console.error(`❌ [GTM Save All] Failed to save ${documentType}:`, error);
+          console.error(
+            `❌ [GTM Save All] Failed to save ${documentType}:`,
+            error
+          );
           failedDocs.push(documentType);
         }
       }
@@ -413,7 +418,6 @@ const GTMPage: React.FC = () => {
         localStorage.removeItem("gtm_selectedDocumentTypes");
         initialMountFetchDone.current = false;
         dispatch(resetGTMState());
-
       } else if (savedCount > 0) {
         toast.success(`Saved ${savedCount} documents`);
         toast.error(`Failed to save ${failedDocs.length} document(s)`);
@@ -475,12 +479,20 @@ const GTMPage: React.FC = () => {
       return;
     }
 
-    if (hasReceivedCompletionMessage && !docxBase64 && view !== "documentsList") {
+    if (
+      hasReceivedCompletionMessage &&
+      !docxBase64 &&
+      view !== "documentsList"
+    ) {
       dispatch(setView("documentsList"));
       return;
     }
 
-    if (isGenerating && generatingProgress === 100 && !hasReceivedCompletionMessage) {
+    if (
+      isGenerating &&
+      generatingProgress === 100 &&
+      !hasReceivedCompletionMessage
+    ) {
       setTimeout(() => {
         dispatch(setCompletionMessageReceived(true));
       }, 1000);
@@ -537,13 +549,22 @@ const GTMPage: React.FC = () => {
         dispatch(setCompletionMessageReceived(true));
       }, 2000);
     }
-  }, [isGenerating, generatingProgress, hasReceivedCompletionMessage, view, dispatch]);
+  }, [
+    isGenerating,
+    generatingProgress,
+    hasReceivedCompletionMessage,
+    view,
+    dispatch,
+  ]);
 
   // 🔥 FIXED: Handle unanswered questions response - prevent preview flash
   useEffect(() => {
     if (!unansweredData) return;
 
-    console.log("📥 [GTM API Response] Unanswered questions received:", unansweredData);
+    console.log(
+      "📥 [GTM API Response] Unanswered questions received:",
+      unansweredData
+    );
 
     let parsedData = unansweredData;
     if (typeof unansweredData.body === "string") {
@@ -556,38 +577,48 @@ const GTMPage: React.FC = () => {
     }
 
     // Scenario 1: Has unanswered questions
-    if (parsedData.missing_questions && parsedData.missing_questions.length > 0) {
-      const formattedQuestions: Question[] =
-        parsedData.missing_questions.map((q: string, index: number) => ({
+    if (
+      parsedData.missing_questions &&
+      parsedData.missing_questions.length > 0
+    ) {
+      const formattedQuestions: Question[] = parsedData.missing_questions.map(
+        (q: string, index: number) => ({
           id: index + 1,
           question: q,
           answer: "",
-        }));
+        })
+      );
 
-      console.log(`✅ [Scenario 1] Found ${formattedQuestions.length} unanswered questions`);
+      console.log(
+        `✅ [Scenario 1] Found ${formattedQuestions.length} unanswered questions`
+      );
       dispatch(setQuestions(formattedQuestions));
       dispatch(setView("questions"));
       dispatch(setShouldFetchUnanswered(false));
       toast.success("Questions loaded successfully!");
-
     } else {
       // No unanswered questions - check gtm_exists flag
       const gtmExistsFlag = parsedData.gtm_exists || false;
 
-      console.log(`✅ [GTM] No unanswered questions. gtm_exists: ${gtmExistsFlag}`);
+      console.log(
+        `✅ [GTM] No unanswered questions. gtm_exists: ${gtmExistsFlag}`
+      );
 
       dispatch(setGtmExists(gtmExistsFlag));
       dispatch(setShouldFetchUnanswered(false));
 
       if (gtmExistsFlag) {
         // 🔥 Scenario 3: GTM documents exist - go DIRECTLY to documentsList (NO preview)
-        console.log("🎯 [Scenario 3] Documents exist - going DIRECTLY to documentsList");
+        console.log(
+          "🎯 [Scenario 3] Documents exist - going DIRECTLY to documentsList"
+        );
         dispatch(setView("documentsList"));
         toast.success("GTM documents already generated!");
-
       } else {
         // 🔥 Scenario 2: No documents - fetch all questions for preview
-        console.log("📋 [Scenario 2] No documents - fetching all questions for preview");
+        console.log(
+          "📋 [Scenario 2] No documents - fetching all questions for preview"
+        );
         dispatch(setShouldFetchAll(true));
       }
     }
@@ -597,7 +628,10 @@ const GTMPage: React.FC = () => {
   useEffect(() => {
     if (!allQuestionsData || !allQuestionsData.questions) return;
 
-    console.log("📥 [GTM API Response] All questions received:", allQuestionsData);
+    console.log(
+      "📥 [GTM API Response] All questions received:",
+      allQuestionsData
+    );
 
     const formattedQuestions: Question[] = allQuestionsData.questions.map(
       (q: any, index: number) => ({
@@ -607,12 +641,13 @@ const GTMPage: React.FC = () => {
       })
     );
 
-    console.log(`✅ [GTM] Loaded ${formattedQuestions.length} answered questions`);
+    console.log(
+      `✅ [GTM] Loaded ${formattedQuestions.length} answered questions`
+    );
     dispatch(setQuestions(formattedQuestions));
     dispatch(setView("preview"));
     dispatch(setShouldFetchAll(false));
     toast.success("Preview loaded successfully!");
-
   }, [allQuestionsData, dispatch]);
 
   // When transitioning to preview
@@ -691,9 +726,20 @@ const GTMPage: React.FC = () => {
 
       const dynamicFileName = "businessidea.txt";
       const savedToken = Cookies.get("token");
+
+      if (!savedToken) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+
       const project_id = JSON.parse(
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
+
+      if (!project_id) {
+        toast.error("Project ID not found. Please select a project.");
+        return;
+      }
 
       const textContent = questions
         .map((q) => `Q: ${q.question}\nA: ${q.answer}`)
@@ -713,17 +759,65 @@ const GTMPage: React.FC = () => {
 
       await toast.promise(uploadPromise, {
         loading: "Uploading your answers...",
-        success: "Answers uploaded successfully! Starting document generation...",
+        success:
+          "Answers uploaded successfully! Starting document generation...",
         error: "Failed to upload answers. Please try again.",
       });
 
-      const websocketUrl = `wss://4iqvtvmxle.execute-api.us-east-1.amazonaws.com/prod/?session_id=${savedToken}`;
+      // 🔥 Use environment variable for WebSocket URL
+      const baseWsUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL;
 
+      if (!baseWsUrl) {
+        console.error(
+          "❌ [GTM] WebSocket URL not configured in environment variables"
+        );
+        toast.error("WebSocket configuration missing. Please contact support.");
+        return;
+      }
+
+      // Construct full WebSocket URL with session_id
+      const websocketUrl = `${baseWsUrl}?session_id=${savedToken}`;
+
+      console.log(
+        "╔════════════════════════════════════════════════════════════╗"
+      );
+      console.log(
+        "║          🚀 STARTING GTM DOCUMENT GENERATION              ║"
+      );
+      console.log(
+        "╚════════════════════════════════════════════════════════════╝"
+      );
+      console.log("🔌 [GTM] Base WebSocket URL:", baseWsUrl);
+      console.log("🔌 [GTM] Full WebSocket URL:", websocketUrl);
+      console.log(
+        "🔑 [GTM] Session Token:",
+        savedToken ? "✅ Present" : "❌ Missing"
+      );
+      console.log("📦 [GTM] Project ID:", project_id);
+      console.log("📦 [GTM] Dispatching Redux actions...");
+
+      // 🔥 Set URL FIRST
       dispatch(setWsUrl(websocketUrl));
+
+      console.log("✅ [GTM] wsUrl dispatched to Redux");
+
+      // Small delay to ensure Redux state propagates
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 🔥 Then set isGenerating
       dispatch(setIsGenerating(true));
+
+      console.log("✅ [GTM] isGenerating=true dispatched to Redux");
+      console.log(
+        "⏳ [GTM] Waiting for middleware to establish WebSocket connection..."
+      );
     } catch (err: any) {
       console.error("❌ [GTM Upload] Error:", err);
       toast.error("Upload failed. Please try again.");
+
+      // Reset state on error
+      dispatch(setIsGenerating(false));
+      dispatch(setWsUrl(""));
     }
   };
 
@@ -788,7 +882,12 @@ const GTMPage: React.FC = () => {
   }
 
   // 🔥 Show loader when fetching data after clicking continue
-  if (isFetching && view !== "selection" && view !== "documentsList" && questions.length === 0) {
+  if (
+    isFetching &&
+    view !== "selection" &&
+    view !== "documentsList" &&
+    questions.length === 0
+  ) {
     return (
       <Box
         sx={{

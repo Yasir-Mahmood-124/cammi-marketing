@@ -1,5 +1,6 @@
 // src/redux/services/common/getUnansweredQuestionsApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 interface GetUnansweredQuestionsResponse {
   body: any;
@@ -9,11 +10,8 @@ interface GetUnansweredQuestionsResponse {
 
 export const getUnansweredQuestionsApi = createApi({
   reducerPath: "getUnansweredQuestionsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-  }),
-  // 🔥 Disable caching globally for this API
-  keepUnusedDataFor: 0, // Don't cache data at all
+  baseQuery: baseApiQuery, // ⭐ Using centralized base query
+  keepUnusedDataFor: 0, // Don't cache data globally
   refetchOnMountOrArgChange: true,
   refetchOnFocus: true,
   refetchOnReconnect: true,
@@ -24,18 +22,16 @@ export const getUnansweredQuestionsApi = createApi({
       { project_id: string; document_type: string }
     >({
       query: ({ project_id, document_type }) => ({
-        url: "/get-unanswered-questions",
+        url: "/document-generation/get-unanswered-questions",
         method: "GET",
         headers: {
           project_id,
           document_type,
         },
       }),
-      // 🔥 Force fresh data every time at endpoint level
-      keepUnusedDataFor: 0,
+      keepUnusedDataFor: 0, // Force fresh data at endpoint level
     }),
   }),
 });
 
-// ✅ Export hook
 export const { useGet_unanswered_questionsQuery } = getUnansweredQuestionsApi;
