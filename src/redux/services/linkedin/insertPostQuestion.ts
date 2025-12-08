@@ -31,7 +31,7 @@ export const insertPostQuestionApi = createApi({
       InsertPostQuestionRequest
     >({
       query: (body) => ({
-        url: "/insert-post-questions",
+        url: "/schedular/insert-post-question",
         method: "POST",
         body,
       }),

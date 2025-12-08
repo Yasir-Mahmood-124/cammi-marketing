@@ -65,7 +65,7 @@ export const downloadPdfApi = createApi({
       DownloadPdfRequest
     >({
       query: (body) => ({
-        url: "/s3-gateway-pdf",
+        url: "/common-lambda/download-as-pdf",
         method: "POST",
         body, // ✅ automatic JSON stringify done by baseApiQuery
       }),

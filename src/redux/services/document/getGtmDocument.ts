@@ -25,7 +25,7 @@ export const getGtmDocumentApi = createApi({
       }
     >({
       query: (body) => ({
-        url: "/gtm-doc-creator",
+        url: "/common-lambda/gtm-sub-docs-creator",
         method: "POST",
         headers: {
           Accept: "application/json",

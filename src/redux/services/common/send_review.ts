@@ -26,7 +26,7 @@ export const sendReviewApi = createApi({
       SendReviewRequest
     >({
       query: (body) => ({
-        url: "/add-review-document",
+        url: "/common-lambda/add-review-documents",
         method: "POST",
         body,
       }),
