@@ -1,5 +1,6 @@
 // src/redux/services/common/send_review.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 // Define the request body type
 export interface SendReviewRequest {
@@ -16,21 +17,14 @@ export interface SendReviewResponse {
   s3_url: string;
 }
 
-// Base URL of your API
-const BASE_URL =
-  "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev";
-
 export const sendReviewApi = createApi({
   reducerPath: "sendReviewApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: baseApiQuery, // ✅ Using shared baseApiQuery
   endpoints: (builder) => ({
-    sendReviewDocument: builder.mutation<SendReviewResponse, SendReviewRequest>({
+    sendReviewDocument: builder.mutation<
+      SendReviewResponse,
+      SendReviewRequest
+    >({
       query: (body) => ({
         url: "/add-review-document",
         method: "POST",

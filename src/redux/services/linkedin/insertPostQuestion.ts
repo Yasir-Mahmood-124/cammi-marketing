@@ -1,5 +1,6 @@
 // src/redux/services/linkedin/insertPostQuestion.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 interface InsertPostQuestionRequest {
   organization_id: string;
@@ -20,20 +21,17 @@ interface InsertPostQuestionResponse {
 
 export const insertPostQuestionApi = createApi({
   reducerPath: "insertPostQuestionApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+
+  // ✅ Using shared base API
+  baseQuery: baseApiQuery,
+
   endpoints: (builder) => ({
     insertPostQuestion: builder.mutation<
       InsertPostQuestionResponse,
       InsertPostQuestionRequest
     >({
       query: (body) => ({
-        url: "insert-post-questions",
+        url: "/insert-post-questions",
         method: "POST",
         body,
       }),
