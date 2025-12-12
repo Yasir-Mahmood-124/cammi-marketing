@@ -87,9 +87,9 @@ const ICPPage: React.FC = () => {
     useUploadTextFileMutation();
   const [getDocxFile, { isLoading: isDownloading }] = useGetDocxFileMutation();
 
-  // Load from env
-  const uploadWebSocketUrl = process.env
-    .NEXT_PUBLIC_UPLOAD_WEBSOCKET_URL as string;
+  // 🔥 IMPROVED: Load both WebSocket URLs from environment
+  const uploadWebSocketUrl = process.env.NEXT_PUBLIC_UPLOAD_WEBSOCKET_URL as string;
+  const realtimeWebSocketUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL as string;
 
   // 🔥 NEW: Handle interrupted upload on mount
   useEffect(() => {
@@ -123,11 +123,14 @@ const ICPPage: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
-  // 🔥 FIXED: Setup WebSocket URL for upload - reset when view changes to upload or initial
+  // 🔥 IMPROVED: Setup WebSocket URL for upload - using environment variable comparison
   useEffect(() => {
     if (view === "initial" || view === "upload") {
-      // Only update if it's currently set to generation URL
-      if (!wsUrl || wsUrl.includes("4iqvtvmxle")) {
+      // Check if current URL is NOT the upload URL
+      const isNotUploadUrl = wsUrl && !wsUrl.startsWith(uploadWebSocketUrl);
+      
+      // Only update if it's empty or set to a different URL (generation URL)
+      if (!wsUrl || isNotUploadUrl) {
         console.log("🔗 [ICP] Setting upload WebSocket URL from ENV");
         dispatch(setWsUrl(uploadWebSocketUrl));
       }
@@ -476,6 +479,7 @@ const ICPPage: React.FC = () => {
     dispatch(setWsUrl(uploadWebSocketUrl));
     dispatch(setView("upload"));
   };
+  
   const handleNoClick = () => {
     console.log(
       "📋 [ICP] User clicked No - fetching fresh unanswered questions"
@@ -661,19 +665,9 @@ const ICPPage: React.FC = () => {
         error: "Failed to upload answers. Please try again.",
       });
 
-      // 🔥 Use environment variable for WebSocket URL (same as GTM)
-      const baseWsUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL;
-
-      if (!baseWsUrl) {
-        console.error(
-          "❌ [ICP] WebSocket URL not configured in environment variables"
-        );
-        toast.error("WebSocket configuration missing. Please contact support.");
-        return;
-      }
-
-      // Construct full WebSocket URL with session_id
-      const websocketUrl = `${baseWsUrl}?session_id=${savedToken}`;
+      // 🔥 Use the realtime WebSocket URL from environment
+      const savedTokenForWs = Cookies.get("token");
+      const websocketUrl = `${realtimeWebSocketUrl}?session_id=${savedTokenForWs}`;
 
       console.log(
         "╔════════════════════════════════════════════════════════════╗"
@@ -684,11 +678,11 @@ const ICPPage: React.FC = () => {
       console.log(
         "╚════════════════════════════════════════════════════════════╝"
       );
-      console.log("🔌 [ICP] Base WebSocket URL:", baseWsUrl);
+      console.log("🔌 [ICP] Base WebSocket URL:", realtimeWebSocketUrl);
       console.log("🔌 [ICP] Full WebSocket URL:", websocketUrl);
       console.log(
         "🔑 [ICP] Session Token:",
-        savedToken ? "✅ Present" : "❌ Missing"
+        savedTokenForWs ? "✅ Present" : "❌ Missing"
       );
       console.log("📦 [ICP] Project ID:", project_id);
       console.log("📦 [ICP] Dispatching Redux actions...");
@@ -717,9 +711,9 @@ const ICPPage: React.FC = () => {
       dispatch(setWsUrl(""));
     }
   };
+  
   const isLoading = isLoadingUnanswered || isLoadingAll;
   const isError = isErrorUnanswered || isErrorAll;
-  // const showButton = view === "questions" || view === "preview";
   const showButton = view === "preview";
 
   if (isError) {
