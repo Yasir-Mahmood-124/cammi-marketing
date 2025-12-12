@@ -87,6 +87,10 @@ const KMFPage: React.FC = () => {
     useUploadTextFileMutation();
   const [getDocxFile, { isLoading: isDownloading }] = useGetDocxFileMutation();
 
+  // 🔥 IMPROVED: Load both WebSocket URLs from environment
+  const uploadWebSocketUrl = process.env.NEXT_PUBLIC_UPLOAD_WEBSOCKET_URL as string;
+  const realtimeWebSocketUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL as string;
+
   // 🔥 NEW: Handle interrupted upload on mount
   useEffect(() => {
     // Check if upload was interrupted
@@ -119,20 +123,19 @@ const KMFPage: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
-  // 🔥 FIXED: Setup WebSocket URL for upload - reset when view changes to upload or initial
+  // 🔥 IMPROVED: Setup WebSocket URL for upload - using environment variable comparison
   useEffect(() => {
-    // Set upload WebSocket URL when on initial or upload view
     if (view === "initial" || view === "upload") {
-      const uploadWebSocketUrl =
-        "wss://91vm5ilj37.execute-api.us-east-1.amazonaws.com/dev";
-
-      // Only update if it's currently set to generation URL
-      if (!wsUrl || wsUrl.includes("4iqvtvmxle")) {
-        console.log("🔗 [KMF] Setting upload WebSocket URL");
+      // Check if current URL is NOT the upload URL
+      const isNotUploadUrl = wsUrl && !wsUrl.startsWith(uploadWebSocketUrl);
+      
+      // Only update if it's empty or set to a different URL (generation URL)
+      if (!wsUrl || isNotUploadUrl) {
+        console.log("🔗 [KMF] Setting upload WebSocket URL from ENV");
         dispatch(setWsUrl(uploadWebSocketUrl));
       }
     }
-  }, [view, wsUrl, dispatch]);
+  }, [view, wsUrl, dispatch, uploadWebSocketUrl]);
 
   // 🔥 RTK Query for unanswered questions
   const {
@@ -468,12 +471,10 @@ const KMFPage: React.FC = () => {
   const allQuestionsAnswered =
     questions.length > 0 && questions.every((q) => q.answer.trim() !== "");
 
+  // When user clicks YES
   const handleYesClick = () => {
     console.log("📤 [KMF] User clicked Yes - preparing upload view");
 
-    // 🔥 FIXED: Ensure upload WebSocket URL is set
-    const uploadWebSocketUrl =
-      "wss://91vm5ilj37.execute-api.us-east-1.amazonaws.com/dev";
     dispatch(setWsUrl(uploadWebSocketUrl));
     dispatch(setView("upload"));
   };
@@ -663,19 +664,9 @@ const KMFPage: React.FC = () => {
         error: "Failed to upload answers. Please try again.",
       });
 
-      // 🔥 Use environment variable for WebSocket URL (same as GTM and ICP)
-      const baseWsUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL;
-
-      if (!baseWsUrl) {
-        console.error(
-          "❌ [KMF] WebSocket URL not configured in environment variables"
-        );
-        toast.error("WebSocket configuration missing. Please contact support.");
-        return;
-      }
-
-      // Construct full WebSocket URL with session_id
-      const websocketUrl = `${baseWsUrl}?session_id=${savedToken}`;
+      // 🔥 Use the realtime WebSocket URL from environment
+      const savedTokenForWs = Cookies.get("token");
+      const websocketUrl = `${realtimeWebSocketUrl}?session_id=${savedTokenForWs}`;
 
       console.log(
         "╔════════════════════════════════════════════════════════════╗"
@@ -686,11 +677,11 @@ const KMFPage: React.FC = () => {
       console.log(
         "╚════════════════════════════════════════════════════════════╝"
       );
-      console.log("🔌 [KMF] Base WebSocket URL:", baseWsUrl);
+      console.log("🔌 [KMF] Base WebSocket URL:", realtimeWebSocketUrl);
       console.log("🔌 [KMF] Full WebSocket URL:", websocketUrl);
       console.log(
         "🔑 [KMF] Session Token:",
-        savedToken ? "✅ Present" : "❌ Missing"
+        savedTokenForWs ? "✅ Present" : "❌ Missing"
       );
       console.log("📦 [KMF] Project ID:", project_id);
       console.log("📦 [KMF] Dispatching Redux actions...");
@@ -722,7 +713,6 @@ const KMFPage: React.FC = () => {
 
   const isLoading = isLoadingUnanswered || isLoadingAll;
   const isError = isErrorUnanswered || isErrorAll;
-  // const showButton = view === "questions" || view === "preview";
   const showButton = view === "preview";
 
   if (isError) {
@@ -896,7 +886,7 @@ const KMFPage: React.FC = () => {
           )}
 
           {showButton && (
-            <Box sx={{ position: "fixed", bottom: "35px", right: "70px" }}>
+            <Box sx={{ position: "fixed", bottom: "20px", right: "70px" }}>
               <Button
                 variant="contained"
                 endIcon={<ArrowForwardIcon sx={{ fontSize: "14px" }} />}
