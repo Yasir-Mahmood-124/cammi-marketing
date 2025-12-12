@@ -99,7 +99,7 @@ export const gtmWebSocketMiddleware: Middleware = (store) => (next) => (action) 
 
           // ✅ Completion message
           if (
-            message.action === "sendMessage" &&
+            message.action === "realtimetext" &&
             message.body === "Document generated successfully!"
           ) {
             console.log("╔════════════════════════════════════════════════════════════╗");
@@ -127,7 +127,7 @@ export const gtmWebSocketMiddleware: Middleware = (store) => (next) => (action) 
           }
 
           // 📊 Progress update
-          if (message.action === "sendMessage" && typeof message.body === "number") {
+          if (message.action === "realtimetext" && typeof message.body === "number") {
             const newProgress = message.body;
             console.log("📊 [GTM Global WS] Progress update:", newProgress + "%");
             store.dispatch(setGeneratingProgress(newProgress));

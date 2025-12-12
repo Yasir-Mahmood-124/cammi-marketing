@@ -87,6 +87,10 @@ const ICPPage: React.FC = () => {
     useUploadTextFileMutation();
   const [getDocxFile, { isLoading: isDownloading }] = useGetDocxFileMutation();
 
+  // Load from env
+  const uploadWebSocketUrl = process.env
+    .NEXT_PUBLIC_UPLOAD_WEBSOCKET_URL as string;
+
   // 🔥 NEW: Handle interrupted upload on mount
   useEffect(() => {
     // Check if upload was interrupted
@@ -121,18 +125,14 @@ const ICPPage: React.FC = () => {
 
   // 🔥 FIXED: Setup WebSocket URL for upload - reset when view changes to upload or initial
   useEffect(() => {
-    // Set upload WebSocket URL when on initial or upload view
     if (view === "initial" || view === "upload") {
-      const uploadWebSocketUrl =
-        "wss://91vm5ilj37.execute-api.us-east-1.amazonaws.com/dev";
-
       // Only update if it's currently set to generation URL
       if (!wsUrl || wsUrl.includes("4iqvtvmxle")) {
-        console.log("🔗 [ICP] Setting upload WebSocket URL");
+        console.log("🔗 [ICP] Setting upload WebSocket URL from ENV");
         dispatch(setWsUrl(uploadWebSocketUrl));
       }
     }
-  }, [view, wsUrl, dispatch]);
+  }, [view, wsUrl, dispatch, uploadWebSocketUrl]);
 
   // 🔥 RTK Query for unanswered questions
   const {
@@ -469,16 +469,13 @@ const ICPPage: React.FC = () => {
     questions.length > 0 &&
     questions.every((q: Question) => q.answer.trim() !== "");
 
+  // When user clicks YES
   const handleYesClick = () => {
     console.log("📤 [ICP] User clicked Yes - preparing upload view");
 
-    // 🔥 FIXED: Ensure upload WebSocket URL is set
-    const uploadWebSocketUrl =
-      "wss://91vm5ilj37.execute-api.us-east-1.amazonaws.com/dev";
     dispatch(setWsUrl(uploadWebSocketUrl));
     dispatch(setView("upload"));
   };
-
   const handleNoClick = () => {
     console.log(
       "📋 [ICP] User clicked No - fetching fresh unanswered questions"

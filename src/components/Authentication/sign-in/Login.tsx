@@ -203,28 +203,6 @@ const Login = () => {
           backgroundPosition: "center",
         },
       }}
-
-      // sx={{
-      //   position: "relative",
-      //   minHeight: "100vh",
-      //   display: "flex",
-      //   overflow: "hidden",
-      //   // backgroundColor: "#EFF1F5",
-      //   // background:"linear-gradient(135deg, #E8EBF3 0%, #F5F7FB 50%, #E8ECF5 100%)",
-      //   // zIndex: 0,
-
-      //   "&::before": {
-      //     content: '""',
-      //     position: "absolute",
-      //     inset: 0,
-      //     backgroundImage: `url(${AuthBackground.src})`,
-      //     backgroundRepeat: "no-repeat",
-      //     // backgroundSize: "cover",
-      //     backgroundPosition: "center",
-      //     // opacity: 1, // Add opacity to make it subtle
-      //     zIndex: -1,
-      //   },
-      // }}
     >
       <Container
         maxWidth={false}

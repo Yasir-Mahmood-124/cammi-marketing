@@ -32,13 +32,13 @@ export const authApi = createApi({
       query: (body) => ({ url: "/auth/login", method: "POST", body }),
     }),
 
-    googleLogin: builder.mutation<LoginResponse, { tokenId: string }>({
-      query: (body) => ({
-        url: "/auth/google-login",
-        method: "POST",
-        body,
-      }),
-    }),
+    // googleLogin: builder.mutation<LoginResponse, { tokenId: string }>({
+    //   query: (body) => ({
+    //     url: "/auth/google-login",
+    //     method: "POST",
+    //     body,
+    //   }),
+    // }),
 
     logout: builder.mutation<{ message: string }, { token: string }>({
       query: ({ token }) => ({
@@ -81,5 +81,5 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useVerifyCodeMutation,
-  useGoogleLoginMutation,
+  // useGoogleLoginMutation,
 } = authApi;

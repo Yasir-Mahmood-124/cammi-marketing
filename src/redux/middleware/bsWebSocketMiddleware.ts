@@ -99,7 +99,7 @@ export const bsWebSocketMiddleware: Middleware = (store) => (next) => (action) =
 
           // ============ CRITICAL: COMPLETION MESSAGE ============
           if (
-            message.action === "sendMessage" &&
+            message.action === "realtimetext" &&
             message.body === "Document generated successfully!"
           ) {
             console.log("╔════════════════════════════════════════════════════════════╗");
@@ -127,7 +127,7 @@ export const bsWebSocketMiddleware: Middleware = (store) => (next) => (action) =
           }
 
           // 📊 Progress updates
-          if (message.action === "sendMessage" && typeof message.body === "number") {
+          if (message.action === "realtimetext" && typeof message.body === "number") {
             const newProgress = message.body;
             console.log("📊 [BS Global WS] Progress update:", newProgress + "%");
             console.log("💾 [BS Global WS] Saving progress to Redux (will persist)");

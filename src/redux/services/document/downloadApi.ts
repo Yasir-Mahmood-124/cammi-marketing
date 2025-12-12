@@ -41,7 +41,7 @@ export const downloadDocument = createApi({
       { session_id: string; document_type: string; project_id: string }
     >({
       query: ({ session_id, document_type, project_id }) => ({
-        url: '/fetch',
+        url: '/common-lambda/s3-to-gateway',
         method: 'GET',
         headers: {
           session_id,
