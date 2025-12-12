@@ -9,18 +9,14 @@ import InputTakerUpdated from "../ICP/InputTakerUpdated";
 import FinalPreview from "../ICP/FinalPreview";
 import Generating from "../ICP/Generating";
 import DocumentPreview from "../ICP/DocumentPreview";
-import DocumentSelection from "./DocumentSelection";
-import GeneratedDocumentsList from "./GeneratedDocumentsList";
 import { useGet_unanswered_questionsQuery } from "@/redux/services/common/getUnansweredQuestionsApi";
 import { useGetQuestionsQuery } from "@/redux/services/common/getQuestionsApi";
 import { useRefineMutation } from "@/redux/services/common/refineApi";
 import { useUploadTextFileMutation } from "@/redux/services/common/uploadApiSlice";
-import { useGetGtmDocumentMutation } from "@/redux/services/document/getGtmDocument";
+import { useGetDocxFileMutation } from "@/redux/services/document/downloadApi";
 import { RootState, AppDispatch } from "@/redux/store";
 import {
   setView,
-  setSelectedDocumentTypes,
-  setCurrentViewingDocument,
   setQuestions,
   updateQuestionAnswer,
   updateCurrentQuestionAnswer,
@@ -38,7 +34,6 @@ import {
   setCompletionMessageReceived,
   setCurrentQuestionIndex,
   setAnsweredIds,
-  setGtmExists,
   resetGTMState,
 } from "@/redux/services/gtm/gtmSlice";
 import Cookies from "js-cookie";
@@ -59,17 +54,16 @@ interface CurrentProject {
 
 const GTMPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const documentFetchTriggered = useRef(false);
   const mountRecoveryTriggered = useRef(false);
-  const initialMountFetchDone = useRef(false); // 🔥 Track if mount fetch happened
+  const initialMountFetchDone = useRef(false);
+  const documentDownloadTriggered = useRef(false);
+  const isRefetchingQuestions = useRef(false); // 🔥 NEW: Track refetch state
 
   const [isRehydrated, setIsRehydrated] = useState(false);
 
   // Get state from Redux
   const {
     view,
-    selectedDocumentTypes,
-    currentViewingDocument,
     questions,
     currentQuestionIndex,
     answeredIds,
@@ -84,15 +78,12 @@ const GTMPage: React.FC = () => {
     shouldFetchAll,
     generatingProgress,
     hasReceivedCompletionMessage,
-    gtmExists,
   } = useSelector((state: RootState) => state.gtm);
 
   // Redux mutation hooks
   const [refine, { isLoading: isRefining }] = useRefineMutation();
-  const [uploadTextFile, { isLoading: isUploading }] =
-    useUploadTextFileMutation();
-  const [getGtmDocument, { isLoading: isDownloading }] =
-    useGetGtmDocumentMutation();
+  const [uploadTextFile, { isLoading: isUploading }] = useUploadTextFileMutation();
+  const [getDocxFile, { isLoading: isDownloadingDoc }] = useGetDocxFileMutation();
 
   // Wait for redux-persist to finish rehydrating
   useEffect(() => {
@@ -144,42 +135,6 @@ const GTMPage: React.FC = () => {
     }
   );
 
-  // Persist selectedDocumentTypes to localStorage
-  useEffect(() => {
-    if (selectedDocumentTypes.length > 0) {
-      localStorage.setItem(
-        "gtm_selectedDocumentTypes",
-        JSON.stringify(selectedDocumentTypes)
-      );
-    }
-  }, [selectedDocumentTypes]);
-
-  // Restore selectedDocumentTypes from localStorage on mount
-  useEffect(() => {
-    if (!isRehydrated) return;
-
-    const savedTypes = localStorage.getItem("gtm_selectedDocumentTypes");
-    if (savedTypes && selectedDocumentTypes.length === 0) {
-      try {
-        const parsed = JSON.parse(savedTypes);
-        if (parsed.length > 0) {
-          console.log("🔄 [Recovery] Restoring selectedDocumentTypes:", parsed);
-          dispatch(setSelectedDocumentTypes(parsed));
-        }
-      } catch (error) {
-        console.error("Failed to parse saved document types:", error);
-      }
-    }
-  }, [isRehydrated, dispatch, selectedDocumentTypes.length]);
-
-  // Clear localStorage when on selection view and no documents selected
-  useEffect(() => {
-    if (view === "selection" && selectedDocumentTypes.length === 0) {
-      localStorage.removeItem("gtm_selectedDocumentTypes");
-      console.log("🧹 [Cleanup] Cleared localStorage");
-    }
-  }, [view, selectedDocumentTypes.length]);
-
   // Get project_id from localStorage on component mount
   useEffect(() => {
     const currentProjectStr = localStorage.getItem("currentProject");
@@ -195,6 +150,62 @@ const GTMPage: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
+  // 🔥 NEW: Refetch unanswered questions when returning to questions view
+  const refetchQuestionsOnReturn = useCallback(() => {
+    if (isRefetchingQuestions.current) {
+      console.log("⏸️ [GTM Refetch] Already refetching, skipping");
+      return;
+    }
+
+    console.log("🔄 [GTM Refetch] User returned to questions view - refetching unanswered questions");
+    isRefetchingQuestions.current = true;
+
+    // Reset to prevent stale state
+    dispatch(setCurrentQuestionIndex(0));
+    dispatch(setAnsweredIds([]));
+
+    // Trigger refetch
+    setTimeout(() => {
+      dispatch(setShouldFetchUnanswered(true));
+      isRefetchingQuestions.current = false;
+    }, 100);
+  }, [dispatch]);
+
+  // 🔥 NEW: Detect when user returns to the page (tab visibility)
+  useEffect(() => {
+    if (!isRehydrated) return;
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && view === "questions" && questions.length > 0) {
+        console.log("👁️ [GTM Visibility] User returned to tab - refetching questions");
+        refetchQuestionsOnReturn();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isRehydrated, view, questions.length, refetchQuestionsOnReturn]);
+
+  // 🔥 NEW: Detect when component remounts on questions view
+  useEffect(() => {
+    if (!isRehydrated || !projectId) return;
+
+    // If we're on questions view and have questions, but user navigated away and came back
+    // OR if page was refreshed
+    if (view === "questions" && questions.length > 0) {
+      const hasNavigatedBack = !initialMountFetchDone.current;
+      
+      if (hasNavigatedBack) {
+        console.log("🔄 [GTM Mount] Detected return to questions view - refetching");
+        refetchQuestionsOnReturn();
+        initialMountFetchDone.current = true;
+      }
+    }
+  }, [isRehydrated, projectId, view, questions.length, refetchQuestionsOnReturn]);
+
   // Cleanup state when unmounting
   useEffect(() => {
     return () => {
@@ -207,45 +218,39 @@ const GTMPage: React.FC = () => {
     };
   }, [dispatch, isGenerating, showDocumentPreview]);
 
-  // 🔥 FIXED: Mount fetch - only runs ONCE on mount after rehydration
+  // 🔥 UPDATED: Mount fetch - only runs ONCE on mount after rehydration
   useEffect(() => {
-    // Don't run until rehydrated
     if (!isRehydrated || !projectId) {
       return;
     }
 
-    // 🔥 Only run ONCE per mount
     if (initialMountFetchDone.current) {
       console.log("↩️ [Mount Fetch] Already done, skipping");
       return;
     }
 
-    // Skip if on these views
-    if (view === "selection" || view === "documentsList" || isGenerating) {
-      console.log(`⏸️ [Mount Fetch] Skipping - view: ${view}`);
+    if (isGenerating) {
+      console.log(`⏸️ [Mount Fetch] Skipping - generating in progress`);
       return;
     }
 
     console.log("🚀 [GTM Mount] Running ONE-TIME mount fetch");
     console.log(`  ├─ View: ${view}`);
-    console.log(`  ├─ Questions count: ${questions.length}`);
-    console.log(`  └─ Selected documents: ${selectedDocumentTypes.length}`);
+    console.log(`  └─ Questions count: ${questions.length}`);
 
-    initialMountFetchDone.current = true; // 🔥 Mark as done
+    initialMountFetchDone.current = true;
 
-    // Fetch based on current view
-    if (view === "questions" && selectedDocumentTypes.length > 0) {
-      console.log("🔄 [Mount Fetch] Fetching unanswered questions");
-      setTimeout(() => {
-        dispatch(setShouldFetchUnanswered(true));
-      }, 100);
-    } else if (view === "preview" && selectedDocumentTypes.length > 0) {
-      console.log("🔄 [Mount Fetch] Fetching all questions");
-      setTimeout(() => {
-        dispatch(setShouldFetchAll(true));
-      }, 100);
-    }
-  }, [isRehydrated, projectId]); // 🔥 ONLY these dependencies - no view!
+    // Always start by fetching unanswered questions
+    console.log("🔄 [Mount Fetch] Fetching unanswered questions");
+    
+    // 🔥 Reset state before fetching
+    dispatch(setCurrentQuestionIndex(0));
+    dispatch(setAnsweredIds([]));
+    
+    setTimeout(() => {
+      dispatch(setShouldFetchUnanswered(true));
+    }, 100);
+  }, [isRehydrated, projectId]);
 
   // Force manual refetch when shouldFetchUnanswered changes
   useEffect(() => {
@@ -273,172 +278,65 @@ const GTMPage: React.FC = () => {
     }
   }, [questions.length, currentQuestionIndex, dispatch]);
 
-  // Handle document selection confirmation
-  const handleDocumentSelectionConfirm = useCallback(
-    (selectedTypes: string[]) => {
-      console.log("📄 [GTM Selection] User selected:", selectedTypes);
-      dispatch(setSelectedDocumentTypes(selectedTypes));
+  // 🔥 Handle document download after generation completion
+  const handleDocumentDownload = useCallback(async () => {
+    if (documentDownloadTriggered.current) {
+      console.log("⏸️ [Download] Already triggered, skipping");
+      return;
+    }
 
-      localStorage.setItem(
-        "gtm_selectedDocumentTypes",
-        JSON.stringify(selectedTypes)
-      );
+    documentDownloadTriggered.current = true;
 
-      // 🔥 Reset mount fetch flag to allow new fetch
-      initialMountFetchDone.current = false;
+    try {
+      const savedToken = Cookies.get("token");
+      const project_id = JSON.parse(
+        localStorage.getItem("currentProject") || "{}"
+      ).project_id;
 
-      // Trigger fetch
-      setTimeout(() => {
-        dispatch(setShouldFetchUnanswered(true));
-      }, 50);
-
-      toast.success(`Selected ${selectedTypes.length} document type(s)`);
-    },
-    [dispatch]
-  );
-
-  // Handle document fetching
-  const handleFetchDocument = useCallback(
-    async (documentType: string) => {
-      if (documentFetchTriggered.current) {
+      if (!savedToken || !project_id) {
+        toast.error("Missing authentication or project information");
         return;
       }
 
-      documentFetchTriggered.current = true;
+      console.log("📥 [GTM] Downloading generated document...");
+      toast.loading("Downloading document...", { id: "download-doc" });
 
-      try {
-        const savedToken = Cookies.get("token");
-        const project_id = JSON.parse(
-          localStorage.getItem("currentProject") || "{}"
-        ).project_id;
+      const response = await getDocxFile({
+        session_id: savedToken,
+        project_id: project_id,
+        document_type: "gtm",
+      }).unwrap();
 
-        const readableName = documentType.replace("gtm-", "");
-        toast.loading(`Fetching ${readableName} document...`, {
-          id: "fetch-doc",
-        });
-
-        const response = await getGtmDocument({
-          session_id: savedToken || "",
-          project_id: project_id,
-          document_type: documentType,
-        }).unwrap();
-
-        if (!response.docxBase64) {
-          throw new Error("Document content not found in response");
-        }
-
-        dispatch(
-          setDocumentData({
-            docxBase64: response.docxBase64,
-            fileName: response.fileName || `${documentType}_document.docx`,
-          })
-        );
-
-        dispatch(setCurrentViewingDocument(documentType));
-        toast.dismiss("fetch-doc");
-        toast.success("Document ready for preview!");
-      } catch (error: any) {
-        console.error("❌ [GTM Document] Fetch failed:", error);
-        toast.dismiss("fetch-doc");
-
-        let errorMessage = "Failed to fetch document. Please try again.";
-        if (error?.data?.message) {
-          errorMessage = error.data.message;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        }
-
-        toast.error(errorMessage);
-        documentFetchTriggered.current = false;
-      }
-    },
-    [dispatch, getGtmDocument]
-  );
-
-  const handleDocumentClick = useCallback(
-    (documentType: string) => {
-      documentFetchTriggered.current = false;
-      handleFetchDocument(documentType);
-    },
-    [handleFetchDocument]
-  );
-
-  // 🔥 FIXED: Reset all state after Save All
-  const handleSaveAllDocuments = useCallback(async () => {
-    console.log("💾 [GTM Save All] Starting to save all documents");
-
-    const savedToken = Cookies.get("token");
-    const project_id = JSON.parse(
-      localStorage.getItem("currentProject") || "{}"
-    ).project_id;
-
-    if (!savedToken || !project_id) {
-      toast.error("Missing authentication or project information");
-      throw new Error("Missing credentials");
-    }
-
-    const totalDocs = selectedDocumentTypes.length;
-    let savedCount = 0;
-    let failedDocs: string[] = [];
-
-    const loadingToastId = toast.loading(
-      `Saving documents... (0/${totalDocs})`
-    );
-
-    try {
-      for (const documentType of selectedDocumentTypes) {
-        try {
-          toast.loading(`Saving documents... (${savedCount}/${totalDocs})`, {
-            id: loadingToastId,
-          });
-
-          await getGtmDocument({
-            session_id: savedToken,
-            project_id: project_id,
-            document_type: documentType,
-          }).unwrap();
-
-          savedCount++;
-        } catch (error: any) {
-          console.error(
-            `❌ [GTM Save All] Failed to save ${documentType}:`,
-            error
-          );
-          failedDocs.push(documentType);
-        }
+      if (!response.docxBase64) {
+        throw new Error("Document content not found in response");
       }
 
-      toast.dismiss(loadingToastId);
+      dispatch(
+        setDocumentData({
+          docxBase64: response.docxBase64,
+          fileName: response.fileName || "gtm_document.docx",
+        })
+      );
 
-      if (failedDocs.length === 0) {
-        toast.success(`All ${savedCount} documents saved successfully!`);
-
-        // 🔥 RESET ALL STATE after successful save
-        console.log("🔄 [GTM] Resetting all state after Save All");
-        localStorage.removeItem("gtm_selectedDocumentTypes");
-        initialMountFetchDone.current = false;
-        dispatch(resetGTMState());
-      } else if (savedCount > 0) {
-        toast.success(`Saved ${savedCount} documents`);
-        toast.error(`Failed to save ${failedDocs.length} document(s)`);
-      } else {
-        throw new Error("Failed to save all documents");
-      }
+      toast.dismiss("download-doc");
+      toast.success("Document ready for preview!");
+      
+      console.log("✅ [GTM] Document downloaded successfully");
     } catch (error: any) {
-      toast.dismiss(loadingToastId);
-      throw error;
-    }
-  }, [selectedDocumentTypes, getGtmDocument, dispatch]);
+      console.error("❌ [GTM Document] Download failed:", error);
+      toast.dismiss("download-doc");
 
-  const handleGenerationComplete = useCallback(() => {
-    console.log("✅ [GTM Generation] Complete - showing document list");
-    dispatch(setIsGenerating(false));
-    dispatch(setView("documentsList"));
-    dispatch(setShouldFetchUnanswered(false));
-    dispatch(setShouldFetchAll(false));
-    documentFetchTriggered.current = false;
-    toast.success("All documents generated successfully!");
-  }, [dispatch]);
+      let errorMessage = "Failed to download document. Please try again.";
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+      documentDownloadTriggered.current = false;
+    }
+  }, [dispatch, getDocxFile]);
 
   // Mount recovery - only for edge cases
   useEffect(() => {
@@ -451,40 +349,8 @@ const GTMPage: React.FC = () => {
 
     console.log("🔍 [Recovery] Running edge case checks");
 
-    if (
-      view === "documentsList" &&
-      selectedDocumentTypes.length === 0 &&
-      !isGenerating
-    ) {
-      console.log("⚠️ [Recovery] On document list but no selected documents");
-      const savedTypes = localStorage.getItem("gtm_selectedDocumentTypes");
-      if (savedTypes) {
-        try {
-          const parsed = JSON.parse(savedTypes);
-          if (parsed.length > 0) {
-            dispatch(setSelectedDocumentTypes(parsed));
-            return;
-          }
-        } catch (error) {
-          console.error("Failed to restore document types:", error);
-        }
-      }
-      dispatch(setView("selection"));
-      toast.error("Session lost. Please select documents again.");
-      return;
-    }
-
     if (docxBase64 && fileName && !showDocumentPreview) {
       dispatch(setShowDocumentPreview(true));
-      return;
-    }
-
-    if (
-      hasReceivedCompletionMessage &&
-      !docxBase64 &&
-      view !== "documentsList"
-    ) {
-      dispatch(setView("documentsList"));
       return;
     }
 
@@ -525,24 +391,23 @@ const GTMPage: React.FC = () => {
     generatingProgress,
     wsUrl,
     view,
-    selectedDocumentTypes.length,
     dispatch,
   ]);
 
-  // Watch for completion message flag changes
+  // 🔥 Watch for completion message and trigger document download
   useEffect(() => {
-    if (hasReceivedCompletionMessage && view !== "documentsList") {
-      handleGenerationComplete();
+    if (hasReceivedCompletionMessage && !showDocumentPreview && !docxBase64) {
+      console.log("✅ [GTM] Generation complete - triggering document download");
+      handleDocumentDownload();
     }
-  }, [hasReceivedCompletionMessage, view, handleGenerationComplete]);
+  }, [hasReceivedCompletionMessage, showDocumentPreview, docxBase64, handleDocumentDownload]);
 
   // Safety: Watch for 100% progress without completion message
   useEffect(() => {
     if (
       isGenerating &&
       generatingProgress === 100 &&
-      !hasReceivedCompletionMessage &&
-      view !== "documentsList"
+      !hasReceivedCompletionMessage
     ) {
       console.log("⚠️ [GTM Safety] 100% reached, forcing completion");
       setTimeout(() => {
@@ -553,11 +418,10 @@ const GTMPage: React.FC = () => {
     isGenerating,
     generatingProgress,
     hasReceivedCompletionMessage,
-    view,
     dispatch,
   ]);
 
-  // 🔥 FIXED: Handle unanswered questions response - prevent preview flash
+  // 🔥 UPDATED: Handle unanswered questions response
   useEffect(() => {
     if (!unansweredData) return;
 
@@ -592,35 +456,22 @@ const GTMPage: React.FC = () => {
       console.log(
         `✅ [Scenario 1] Found ${formattedQuestions.length} unanswered questions`
       );
+      
+      // 🔥 Reset state when setting new questions
+      dispatch(setCurrentQuestionIndex(0));
+      dispatch(setAnsweredIds([]));
       dispatch(setQuestions(formattedQuestions));
       dispatch(setView("questions"));
       dispatch(setShouldFetchUnanswered(false));
-      toast.success("Questions loaded successfully!");
+      
+      toast.success(`Loaded ${formattedQuestions.length} question(s)`);
     } else {
-      // No unanswered questions - check gtm_exists flag
-      const gtmExistsFlag = parsedData.gtm_exists || false;
-
+      // Scenario 2: No unanswered questions - fetch all questions for preview
       console.log(
-        `✅ [GTM] No unanswered questions. gtm_exists: ${gtmExistsFlag}`
+        "📋 [Scenario 2] No unanswered questions - fetching all questions for preview"
       );
-
-      dispatch(setGtmExists(gtmExistsFlag));
       dispatch(setShouldFetchUnanswered(false));
-
-      if (gtmExistsFlag) {
-        // 🔥 Scenario 3: GTM documents exist - go DIRECTLY to documentsList (NO preview)
-        console.log(
-          "🎯 [Scenario 3] Documents exist - going DIRECTLY to documentsList"
-        );
-        dispatch(setView("documentsList"));
-        toast.success("GTM documents already generated!");
-      } else {
-        // 🔥 Scenario 2: No documents - fetch all questions for preview
-        console.log(
-          "📋 [Scenario 2] No documents - fetching all questions for preview"
-        );
-        dispatch(setShouldFetchAll(true));
-      }
+      dispatch(setShouldFetchAll(true));
     }
   }, [unansweredData, dispatch]);
 
@@ -721,7 +572,7 @@ const GTMPage: React.FC = () => {
 
   const handleGenerateDocument = async () => {
     try {
-      documentFetchTriggered.current = false;
+      documentDownloadTriggered.current = false;
       mountRecoveryTriggered.current = false;
 
       const dynamicFileName = "businessidea.txt";
@@ -764,7 +615,6 @@ const GTMPage: React.FC = () => {
         error: "Failed to upload answers. Please try again.",
       });
 
-      // 🔥 Use environment variable for WebSocket URL
       const baseWsUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL;
 
       if (!baseWsUrl) {
@@ -775,7 +625,6 @@ const GTMPage: React.FC = () => {
         return;
       }
 
-      // Construct full WebSocket URL with session_id
       const websocketUrl = `${baseWsUrl}?session_id=${savedToken}`;
 
       console.log(
@@ -796,17 +645,12 @@ const GTMPage: React.FC = () => {
       console.log("📦 [GTM] Project ID:", project_id);
       console.log("📦 [GTM] Dispatching Redux actions...");
 
-      // 🔥 Set URL FIRST
       dispatch(setWsUrl(websocketUrl));
-
       console.log("✅ [GTM] wsUrl dispatched to Redux");
 
-      // Small delay to ensure Redux state propagates
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // 🔥 Then set isGenerating
       dispatch(setIsGenerating(true));
-
       console.log("✅ [GTM] isGenerating=true dispatched to Redux");
       console.log(
         "⏳ [GTM] Waiting for middleware to establish WebSocket connection..."
@@ -815,7 +659,6 @@ const GTMPage: React.FC = () => {
       console.error("❌ [GTM Upload] Error:", err);
       toast.error("Upload failed. Please try again.");
 
-      // Reset state on error
       dispatch(setIsGenerating(false));
       dispatch(setWsUrl(""));
     }
@@ -863,7 +706,7 @@ const GTMPage: React.FC = () => {
     );
   }
 
-  if (showDocumentPreview && docxBase64 && currentViewingDocument) {
+  if (showDocumentPreview && docxBase64) {
     return (
       <Box
         sx={{
@@ -875,18 +718,17 @@ const GTMPage: React.FC = () => {
         <DocumentPreview
           docxBase64={docxBase64}
           fileName={fileName}
-          documentType={currentViewingDocument as any}
+          documentType="gtm"
         />
       </Box>
     );
   }
 
-  // 🔥 Show loader when fetching data after clicking continue
+  // Show loader when fetching data
   if (
     isFetching &&
-    view !== "selection" &&
-    view !== "documentsList" &&
-    questions.length === 0
+    questions.length === 0 &&
+    !isGenerating
   ) {
     return (
       <Box
@@ -902,7 +744,7 @@ const GTMPage: React.FC = () => {
       >
         <CircularProgress />
         <div style={{ fontFamily: "Poppins", color: "#666", fontSize: "16px" }}>
-          Loading...
+          Loading questions...
         </div>
       </Box>
     );
@@ -919,7 +761,7 @@ const GTMPage: React.FC = () => {
         position: "relative",
       }}
     >
-      {isGenerating && view !== "documentsList" ? (
+      {isGenerating ? (
         <Box
           sx={{
             flex: 1,
@@ -932,18 +774,6 @@ const GTMPage: React.FC = () => {
         </Box>
       ) : (
         <>
-          {view === "selection" && (
-            <DocumentSelection onConfirm={handleDocumentSelectionConfirm} />
-          )}
-
-          {view === "documentsList" && (
-            <GeneratedDocumentsList
-              selectedDocumentTypes={selectedDocumentTypes}
-              onDocumentClick={handleDocumentClick}
-              onSaveAll={handleSaveAllDocuments}
-            />
-          )}
-
           {view === "questions" &&
             questions.length > 0 &&
             hasValidCurrentQuestion && (

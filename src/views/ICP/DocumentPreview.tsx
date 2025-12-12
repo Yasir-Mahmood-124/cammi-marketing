@@ -12,7 +12,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import SaveIcon from "@mui/icons-material/Save";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import WarningIcon from "@mui/icons-material/Warning";
 import { useDownloadPdfMutation } from "@/redux/services/document/download-pdf";
 import { useSendReviewDocumentMutation } from "@/redux/services/common/send_review";
@@ -22,7 +21,7 @@ import { resetForNewDocument as resetIcp } from "@/redux/services/icp/icpSlice";
 import { resetForNewDocument as resetKmf } from "@/redux/services/kmf/kmfSlice";
 import { resetForNewDocument as resetBs } from "@/redux/services/bs/bsSlice";
 import { resetForNewDocument as resetSr } from "@/redux/services/sr/srSlice";
-import { setView, setShowDocumentPreview } from "@/redux/services/gtm/gtmSlice";
+import { resetGTMState } from "@/redux/services/gtm/gtmSlice";
 import { AppDispatch } from "@/redux/store";
 import Cookies from "js-cookie";
 import EditHeadingDialog from "./EditHeadingDialog";
@@ -31,21 +30,7 @@ import toast from "react-hot-toast";
 interface DocumentPreviewProps {
   docxBase64: string;
   fileName: string;
-  documentType:
-    | "icp"
-    | "kmf"
-    | "bs"
-    | "sr"
-    | "gtm"
-    | "gtm-gotomarket"
-    | "gtm-marketresearch"
-    | "gtm-brand"
-    | "gtm-brandkeymessaging"
-    | "gtm-solution"
-    | "gtm-contentpillars"
-    | "gtm-sales"
-    | "gtm-advice"
-    | "gtm-reporting";
+  documentType: "icp" | "kmf" | "bs" | "sr" | "gtm";
 }
 
 interface TableOfContentsItem {
@@ -84,11 +69,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     useSendReviewDocumentMutation();
   const [getDocxFile, { isLoading: isDownloading }] = useGetDocxFileMutation();
 
-  // 🔥 NEW: Check if document is GTM type
-  const isGTMDocument = (docType: string): boolean => {
-    return docType.startsWith("gtm-") || docType === "gtm";
-  };
-
   const getDocumentDisplayName = (docType: string): string => {
     const labels: Record<string, string> = {
       icp: "ICP",
@@ -96,15 +76,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       bs: "BS",
       sr: "SR",
       gtm: "GTM",
-      "gtm-gotomarket": "Go-to-Market Strategy",
-      "gtm-marketresearch": "Market Research",
-      "gtm-brand": "Brand",
-      "gtm-brandkeymessaging": "Brand Key Messaging",
-      "gtm-solution": "Solution",
-      "gtm-contentpillars": "Content Pillars",
-      "gtm-sales": "Sales",
-      "gtm-advice": "Advice",
-      "gtm-reporting": "Reporting",
     };
     return labels[docType] || docType.toUpperCase();
   };
@@ -356,12 +327,11 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         id: "review-submit",
       });
 
-      // 🔥 Send the base64-encoded DOCX instead of plain text
       const response = await sendReview({
         session_id: savedToken || "",
         project_id: project_id,
         document_type: documentType,
-        document_text: currentDocxBase64, // ✅ Changed from documentText
+        document_text: currentDocxBase64,
       }).unwrap();
 
       toast.success("Document submitted for review successfully!", {
@@ -370,7 +340,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     } catch (error: any) {
       console.log("⚠️ [DocumentPreview] Submit for review response:", error);
 
-      // 🔥 Handle backend validation messages (400 status)
       if (error?.status === 400 && error?.data?.message) {
         toast.dismiss("review-submit");
         toast(error.data.message, {
@@ -378,7 +347,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           icon: "ℹ️",
         });
       } else {
-        // Handle actual errors (500, network issues, etc.)
         console.error(
           "❌ [DocumentPreview] Failed to submit for review:",
           error
@@ -390,44 +358,25 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     }
   };
 
-  // 🔥 NEW: Handle Back button click (only for GTM documents)
-  const handleBack = () => {
-    console.log(
-      "⬅️ [DocumentPreview] Back button clicked - returning to document list"
-    );
-    dispatch(setShowDocumentPreview(false));
-    dispatch(setView("documentsList"));
-    toast.success("Returned to documents list");
-  };
-
-  // 🔥 UPDATED: Modified Save behavior
   const handleSave = () => {
     const displayName = getDocumentDisplayName(documentType);
+    console.log(
+      `💾 [DocumentPreview] ${displayName} document saved - resetting state`
+    );
+    
+    toast.success("Document saved successfully!");
 
-    if (isGTMDocument(documentType)) {
-      // 🔥 For GTM documents: Go back to document list (don't reset state)
-      console.log(
-        `💾 [DocumentPreview] ${displayName} document saved - returning to documents list`
-      );
-      toast.success("Document saved successfully!");
-      dispatch(setShowDocumentPreview(false));
-      dispatch(setView("documentsList"));
-    } else {
-      // For other documents: Reset state (current behavior)
-      console.log(
-        `💾 [DocumentPreview] ${displayName} document saved - resetting state`
-      );
-      toast.success("Document saved successfully!");
-
-      if (documentType === "icp") {
-        dispatch(resetIcp());
-      } else if (documentType === "kmf") {
-        dispatch(resetKmf());
-      } else if (documentType === "bs") {
-        dispatch(resetBs());
-      } else if (documentType === "sr") {
-        dispatch(resetSr());
-      }
+    // Reset state for all document types
+    if (documentType === "icp") {
+      dispatch(resetIcp());
+    } else if (documentType === "kmf") {
+      dispatch(resetKmf());
+    } else if (documentType === "bs") {
+      dispatch(resetBs());
+    } else if (documentType === "sr") {
+      dispatch(resetSr());
+    } else if (documentType === "gtm") {
+      dispatch(resetGTMState());
     }
   };
 
@@ -468,7 +417,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       console.log("✅ [DocumentPreview] Latest document received");
 
       setCurrentDocxBase64(response.docxBase64);
-      setHasEmptyContent(false); // Reset warning
+      setHasEmptyContent(false);
 
       setIsLoading(true);
       setDocumentHtml("");
@@ -553,34 +502,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           position: "relative",
         }}
       >
-        {/* 🔥 NEW: Back Button (only for GTM documents) */}
-        {isGTMDocument(documentType) && (
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={handleBack}
-            sx={{
-              position: "absolute",
-              left: "40px",
-              fontFamily: "Poppins",
-              fontSize: "13px",
-              fontWeight: 600,
-              padding: "6px 16px",
-              borderRadius: "6px",
-              border: "2px solid #3EA3FF",
-              backgroundColor: "#FFF",
-              color: "#3EA3FF",
-              textTransform: "none",
-              "&:hover": {
-                border: "2px solid #3EA3FF",
-                backgroundColor: "#F0F8FF",
-              },
-            }}
-          >
-            Back
-          </Button>
-        )}
-
         <Typography
           sx={{
             fontFamily: "Poppins",

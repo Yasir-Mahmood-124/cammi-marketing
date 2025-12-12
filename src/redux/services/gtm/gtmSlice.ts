@@ -8,16 +8,12 @@ interface Question {
 }
 
 interface GTMState {
-  view: "selection" | "questions" | "preview" | "documentsList";
+  view: "questions" | "preview";
   questions: Question[];
   currentQuestionIndex: number;
   answeredIds: number[];
   projectId: string;
   sessionId: string | undefined;
-  
-  // Document selection
-  selectedDocumentTypes: string[];
-  currentViewingDocument: string | null;
   
   // Document generation states
   isGenerating: boolean;
@@ -36,20 +32,15 @@ interface GTMState {
   // Flags for fetching
   shouldFetchUnanswered: boolean;
   shouldFetchAll: boolean;
-  
-  // GTM existence flag
-  gtmExists: boolean;
 }
 
 const initialState: GTMState = {
-  view: "selection",
+  view: "questions",
   questions: [],
   currentQuestionIndex: 0,
   answeredIds: [],
   projectId: "",
   sessionId: undefined,
-  selectedDocumentTypes: [],
-  currentViewingDocument: null,
   isGenerating: false,
   wsUrl: "",
   generatingProgress: 0,
@@ -62,7 +53,6 @@ const initialState: GTMState = {
   fileName: "",
   shouldFetchUnanswered: false,
   shouldFetchAll: false,
-  gtmExists: false,
 };
 
 const gtmSlice = createSlice({
@@ -71,14 +61,6 @@ const gtmSlice = createSlice({
   reducers: {
     setView: (state, action: PayloadAction<GTMState["view"]>) => {
       state.view = action.payload;
-    },
-    
-    setSelectedDocumentTypes: (state, action: PayloadAction<string[]>) => {
-      state.selectedDocumentTypes = action.payload;
-    },
-    
-    setCurrentViewingDocument: (state, action: PayloadAction<string | null>) => {
-      state.currentViewingDocument = action.payload;
     },
     
     setQuestions: (state, action: PayloadAction<Question[]>) => {
@@ -223,28 +205,16 @@ const gtmSlice = createSlice({
       state.shouldFetchAll = action.payload;
     },
     
-    // 🆕 New action to set GTM existence flag
-    setGtmExists: (state, action: PayloadAction<boolean>) => {
-      state.gtmExists = action.payload;
-    },
-    
     resetGTMState: (state) => {
       return initialState;
     },
     
     resetForNewDocument: (state) => {
-      // Clear localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('gtm_selectedDocumentTypes');
-      }
-      
-      state.view = "selection";
+      state.view = "questions";
       state.questions = [];
       state.currentQuestionIndex = 0;
       state.answeredIds = [];
       state.sessionId = undefined;
-      state.selectedDocumentTypes = [];
-      state.currentViewingDocument = null;
       state.isGenerating = false;
       state.generatingProgress = 0;
       state.generatingContent = "Waiting for Document Generation...";
@@ -256,15 +226,12 @@ const gtmSlice = createSlice({
       state.fileName = "";
       state.shouldFetchUnanswered = false;
       state.shouldFetchAll = false;
-      state.gtmExists = false;
     },
   },
 });
 
 export const {
   setView,
-  setSelectedDocumentTypes,
-  setCurrentViewingDocument,
   setQuestions,
   updateQuestionAnswer,
   updateCurrentQuestionAnswer,
@@ -272,7 +239,7 @@ export const {
   nextQuestion,
   goToQuestion,
   addAnsweredId,
-  setAnsweredIds,
+  setAnsweredIds, // 🔥 Added this export
   setProjectId,
   setSessionId,
   setIsGenerating,
@@ -288,7 +255,6 @@ export const {
   setDocumentData,
   setShouldFetchUnanswered,
   setShouldFetchAll,
-  setGtmExists,
   resetGTMState,
   resetForNewDocument,
 } = gtmSlice.actions;
