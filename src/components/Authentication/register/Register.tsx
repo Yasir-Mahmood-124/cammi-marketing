@@ -67,6 +67,14 @@ const Register = () => {
         const id = searchParams.get("id");
         const error = searchParams.get("error");
 
+        // ✅ ADD THESE LINES:
+        const dashboard_status = searchParams.get("dashboard_status");
+        const user_input_status = searchParams.get("user_input_status");
+        const final_preview_status = searchParams.get("final_preview_status");
+        const document_preview_status = searchParams.get(
+          "document_preview_status"
+        );
+
         if (error) {
           toast("Google sign-in failed", { variant: "error" });
           setIsProcessingGoogle(false);
@@ -78,6 +86,7 @@ const Register = () => {
 
           Cookies.set("token", sessionId, { expires: 7, secure: true });
 
+          // ✅ UPDATE userData object:
           const userData = {
             id: id,
             name: name,
@@ -85,6 +94,10 @@ const Register = () => {
             picture: picture,
             sub: sub,
             locale: locale,
+            dashboard_status: dashboard_status, // ✅ Added
+            user_input_status: user_input_status, // ✅ Added
+            final_preview_status: final_preview_status, // ✅ Added
+            document_preview_status: document_preview_status, // ✅ Added
           };
           localStorage.setItem("user", JSON.stringify(userData));
 

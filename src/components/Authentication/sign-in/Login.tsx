@@ -53,6 +53,11 @@ const Login = () => {
         const locale = searchParams.get("locale");
         const id = searchParams.get("id");
         const error = searchParams.get("error");
+        const dashboard_status = searchParams.get("dashboard_status");
+        const user_input_status = searchParams.get("user_input_status");
+        const final_preview_status = searchParams.get("final_preview_status");
+        const document_preview_status = searchParams.get("document_preview_status");
+
 
         // Handle error case
         if (error) {
@@ -80,6 +85,10 @@ const Login = () => {
             picture: picture,
             sub: sub,
             locale: locale,
+            dashboard_status: dashboard_status,
+            user_input_status: user_input_status,
+            final_preview_status: final_preview_status,
+            document_preview_status: document_preview_status,
           };
           localStorage.setItem("user", JSON.stringify(userData));
 
