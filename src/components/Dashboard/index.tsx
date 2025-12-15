@@ -40,6 +40,10 @@ import GenericDocumentPreview from "@/components/GenericDocumentPreview";
 import toast from "react-hot-toast";
 import styles from "./style.module.scss";
 
+// ✅ NEW: Import the usePageTour hook
+import { usePageTour } from "@/components/onboarding/usePageTour";
+import { DashboardTourSteps } from "@/components/onboarding/tours/DashboardTour";
+
 interface DocumentItem {
   document_id?: string;
   document_type_uuid?: string;
@@ -67,15 +71,11 @@ const DashboardPage = () => {
     },
   ] = useGetSpecificDocumentMutation();
 
-  const [
-    editDocumentName,
-    { isLoading: isEditingName },
-  ] = useEditDocumentNameMutation();
+  const [editDocumentName, { isLoading: isEditingName }] =
+    useEditDocumentNameMutation();
 
-  const [
-    deleteDocument,
-    { isLoading: isDeletingDocument },
-  ] = useDeleteDocumentMutation();
+  const [deleteDocument, { isLoading: isDeletingDocument }] =
+    useDeleteDocumentMutation();
 
   // State for document preview
   const [showPreview, setShowPreview] = useState(false);
@@ -96,42 +96,55 @@ const DashboardPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // State for editing document name
-  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(null);
+  const [editingDocumentId, setEditingDocumentId] = useState<string | null>(
+    null
+  );
   const [editingDocumentName, setEditingDocumentName] = useState("");
 
   // State for three-dot menu
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedMenuDocument, setSelectedMenuDocument] = useState<DocumentItem | null>(null);
+  const [selectedMenuDocument, setSelectedMenuDocument] =
+    useState<DocumentItem | null>(null);
 
   // State for delete confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [documentToDelete, setDocumentToDelete] = useState<DocumentItem | null>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<DocumentItem | null>(
+    null
+  );
+
+  // ✅ NEW: Use the new onboarding system
+  const { restartTour, isTourActive } = usePageTour({
+    tourType: 'dashboard',
+    steps: DashboardTourSteps,
+    autoStart: true,
+    delay: 500,
+  });
 
   // Calculate documents per row based on screen width
   useEffect(() => {
     const calculateDocumentsPerRow = () => {
       const screenWidth = window.innerWidth;
-      
+
       // Subtract sidebar width (approximately 250px) and padding
       const availableWidth = screenWidth - 250 - 64; // 64px for px: 4 (32px each side)
-      
+
       // Each document card is 105px wide + 9.6px gap (1.2 * 8px)
       const cardWidth = 105 + 9.6;
-      
+
       // Calculate how many cards can fit
       const cardsPerRow = Math.floor(availableWidth / cardWidth);
-      
+
       // Set minimum of 5 and maximum based on calculation
       const finalCount = Math.max(5, Math.min(cardsPerRow, 15));
-      
+
       setDocumentsPerRow(finalCount);
     };
 
     // Calculate on mount and on window resize
     calculateDocumentsPerRow();
-    window.addEventListener('resize', calculateDocumentsPerRow);
+    window.addEventListener("resize", calculateDocumentsPerRow);
 
-    return () => window.removeEventListener('resize', calculateDocumentsPerRow);
+    return () => window.removeEventListener("resize", calculateDocumentsPerRow);
   }, []);
 
   useEffect(() => {
@@ -152,24 +165,32 @@ const DashboardPage = () => {
   // Log document structure when documents arrive
   useEffect(() => {
     if (documentsData?.documents && documentsData.documents.length > 0) {
-      console.log("First document structure:", JSON.stringify(documentsData.documents[0], null, 2));
-      console.log("All document keys:", Object.keys(documentsData.documents[0]));
+      console.log(
+        "First document structure:",
+        JSON.stringify(documentsData.documents[0], null, 2)
+      );
+      console.log(
+        "All document keys:",
+        Object.keys(documentsData.documents[0])
+      );
     }
   }, [documentsData]);
 
   // Helper function to get document unique identifier
   const getDocumentId = (doc: DocumentItem): string | null => {
-    return doc.document_id || 
-           doc.document_type_uuid || 
-           doc.document_url ||
-           doc.document_name ||
-           null;
+    return (
+      doc.document_id ||
+      doc.document_type_uuid ||
+      doc.document_url ||
+      doc.document_name ||
+      null
+    );
   };
 
   // Handle document card click - open document
   const handleDocumentClick = async (doc: DocumentItem) => {
     const docId = getDocumentId(doc);
-    
+
     if (loadingDocumentId === docId || editingDocumentId === docId) {
       return;
     }
@@ -225,7 +246,10 @@ const DashboardPage = () => {
   };
 
   // Handle three-dot menu click
-  const handleMenuClick = (e: React.MouseEvent<HTMLElement>, doc: DocumentItem) => {
+  const handleMenuClick = (
+    e: React.MouseEvent<HTMLElement>,
+    doc: DocumentItem
+  ) => {
     e.stopPropagation();
     console.log("Menu clicked for document:", doc);
     console.log("Document keys:", Object.keys(doc));
@@ -242,22 +266,31 @@ const DashboardPage = () => {
   // Handle rename click from menu
   const handleRenameClick = () => {
     console.log("Rename clicked!");
-    console.log("Full selected document:", JSON.stringify(selectedMenuDocument, null, 2));
-    
+    console.log(
+      "Full selected document:",
+      JSON.stringify(selectedMenuDocument, null, 2)
+    );
+
     if (selectedMenuDocument) {
       // Try to find any unique identifier
       const docId = getDocumentId(selectedMenuDocument);
-      
+
       console.log("Setting editing document ID:", docId);
-      console.log("Setting editing document name:", selectedMenuDocument.document_name);
-      console.log("Available document fields:", Object.keys(selectedMenuDocument));
-      
+      console.log(
+        "Setting editing document name:",
+        selectedMenuDocument.document_name
+      );
+      console.log(
+        "Available document fields:",
+        Object.keys(selectedMenuDocument)
+      );
+
       setEditingDocumentId(docId);
       setEditingDocumentName(selectedMenuDocument.document_name || "");
     } else {
       console.log("No document selected!");
     }
-    
+
     handleMenuClose();
   };
 
@@ -284,7 +317,8 @@ const DashboardPage = () => {
         return;
       }
 
-      const documentTypeUuid = documentToDelete.document_type_uuid || documentToDelete.document_id;
+      const documentTypeUuid =
+        documentToDelete.document_type_uuid || documentToDelete.document_id;
 
       if (!documentTypeUuid) {
         toast.error("Document ID not found.");
@@ -357,7 +391,7 @@ const DashboardPage = () => {
       }).unwrap();
 
       toast.success("Document name updated successfully");
-      
+
       // Refresh documents list
       const sessionId = Cookies.get("token");
       if (sessionId) {
@@ -492,10 +526,15 @@ const DashboardPage = () => {
             isDownloading={isDownloading}
             userId={(() => {
               const userDataString = localStorage.getItem("userData");
-              const userData = userDataString ? JSON.parse(userDataString) : null;
+              const userData = userDataString
+                ? JSON.parse(userDataString)
+                : null;
               return userData?.user_id || selectedDocument?.user_id;
             })()}
-            documentTypeUuid={selectedDocument?.document_type_uuid || selectedDocument?.document_id}
+            documentTypeUuid={
+              selectedDocument?.document_type_uuid ||
+              selectedDocument?.document_id
+            }
             onDocumentNameUpdated={(newName) => {
               // Update the selected document name using proper state update
               if (selectedDocument) {
@@ -521,28 +560,35 @@ const DashboardPage = () => {
   // Regular dashboard view
   return (
     <>
-      <Box className={styles.dashboardContainer}>
+      {/* ✅ REMOVED: Old Joyride component - now handled by OnboardingProvider */}
+      
+      <Box
+        className={styles.dashboardContainer}
+        data-tour="dashboard-main-area"
+      >
         {/* Main Content */}
         <Box className={styles.mainContent}>
           <Box className={styles.contentWrapper}>
             {/* Welcome Section */}
-            <Box className={styles.welcomeSection}>
+            <Box className={styles.welcomeSection} data-tour="welcome-section">
               <Typography className={styles.welcomeTitle}>
-                Welcome to{" "}
-                <span className={styles.brandName}>
-                  CAMMI
-                </span>
+                Welcome to <span className={styles.brandName}>CAMMI</span>
               </Typography>
 
               {/* Search Bar */}
-              <Box className={styles.searchBarContainer}>
+              <Box
+                className={styles.searchBarContainer}
+                data-tour="search-bar-container"
+              >
                 <FaSearch />
                 <input
                   type="text"
                   placeholder="Search documents"
                   value={searchQuery}
                   onChange={handleSearchChange}
-                  className={`${styles.searchInput} ${searchQuery ? styles.withClearButton : ''}`}
+                  className={`${styles.searchInput} ${
+                    searchQuery ? styles.withClearButton : ""
+                  }`}
                 />
                 {searchQuery && (
                   <Box
@@ -562,13 +608,19 @@ const DashboardPage = () => {
 
             <Box className={styles.documentsWrapper}>
               {/* My Documents */}
-              <Box className={styles.documentsSection}>
+              <Box
+                className={styles.documentsSection}
+                data-tour="my-documents-section"
+              >
                 {/* Header with See More/See Less Toggle */}
                 <Box className={styles.sectionHeader}>
                   <Typography className={styles.sectionTitle}>
                     My Documents
                     {searchQuery && (
-                      <Typography component="span" className={styles.searchResultsCount}>
+                      <Typography
+                        component="span"
+                        className={styles.searchResultsCount}
+                      >
                         ({totalDocuments}{" "}
                         {totalDocuments === 1 ? "result" : "results"})
                       </Typography>
@@ -606,11 +658,20 @@ const DashboardPage = () => {
                           <Box
                             key={docId || index}
                             className={styles.documentCardWrapper}
+                            data-tour={
+                              index === 0 ? "first-document-card" : undefined
+                            }
                           >
                             {/* Card */}
                             <Box
-                              onClick={() => !isLoading && !isEditing && handleDocumentClick(doc)}
-                              className={`${styles.documentCard} ${isLoading ? styles.loading : ''} ${isEditing ? styles.editing : ''}`}
+                              onClick={() =>
+                                !isLoading &&
+                                !isEditing &&
+                                handleDocumentClick(doc)
+                              }
+                              className={`${styles.documentCard} ${
+                                isLoading ? styles.loading : ""
+                              } ${isEditing ? styles.editing : ""}`}
                             >
                               <img
                                 src={defaultDocumentImage}
@@ -649,7 +710,9 @@ const DashboardPage = () => {
                                   <input
                                     type="text"
                                     value={editingDocumentName}
-                                    onChange={(e) => setEditingDocumentName(e.target.value)}
+                                    onChange={(e) =>
+                                      setEditingDocumentName(e.target.value)
+                                    }
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter") {
                                         handleSaveDocumentName(doc);
@@ -663,12 +726,17 @@ const DashboardPage = () => {
                                   />
                                   <Box className={styles.editButtonsContainer}>
                                     <Button
-                                      onClick={() => handleSaveDocumentName(doc)}
+                                      onClick={() =>
+                                        handleSaveDocumentName(doc)
+                                      }
                                       disabled={isEditingName}
                                       className={styles.saveButton}
                                     >
                                       {isEditingName ? (
-                                        <CircularProgress size={10} sx={{ color: "#FFF" }} />
+                                        <CircularProgress
+                                          size={10}
+                                          sx={{ color: "#FFF" }}
+                                        />
                                       ) : (
                                         "Save"
                                       )}
@@ -686,7 +754,9 @@ const DashboardPage = () => {
                                 <>
                                   <Typography
                                     className={styles.documentName}
-                                    title={doc.document_name || "Unnamed Document"}
+                                    title={
+                                      doc.document_name || "Unnamed Document"
+                                    }
                                   >
                                     {doc.document_name || "Unnamed Document"}
                                   </Typography>
@@ -721,85 +791,91 @@ const DashboardPage = () => {
                 )}
               </Box>
 
-                {/* CAMMI Expert Review Table */}
-                <Box className={styles.documentsSection}>
-                  <Typography className={styles.sectionTitle}>
-                    CAMMI Expert Review
-                  </Typography>
+              {/* CAMMI Expert Review Table */}
+              <Box
+                className={styles.documentsSection}
+                data-tour="expert-review-section"
+              >
+                <Typography className={styles.sectionTitle}>
+                  CAMMI Expert Review
+                </Typography>
 
-                  <TableContainer
-                    component={Paper}
-                    elevation={0}
-                    className={styles.tableContainer}
-                  >
-                    <Table>
-                      <TableHead>
+                <TableContainer
+                  component={Paper}
+                  elevation={0}
+                  className={styles.tableContainer}
+                >
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        {[
+                          "No",
+                          "Name",
+                          "Organization",
+                          "Date",
+                          "Project",
+                          "Status",
+                        ].map((header) => (
+                          <TableCell
+                            key={header}
+                            className={styles.tableHeader}
+                          >
+                            {header}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </TableHead>
+
+                    <TableBody>
+                      {isLoading ? (
                         <TableRow>
-                          {[
-                            "No",
-                            "Name",
-                            "Organization",
-                            "Date",
-                            "Project",
-                            "Status",
-                          ].map((header) => (
-                            <TableCell key={header} className={styles.tableHeader}>
-                              {header}
-                            </TableCell>
-                          ))}
+                          <TableCell colSpan={6} align="center">
+                            Loading...
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-
-                      <TableBody>
-                        {isLoading ? (
-                          <TableRow>
-                            <TableCell colSpan={6} align="center">
-                              Loading...
+                      ) : error ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            Error loading data
+                          </TableCell>
+                        </TableRow>
+                      ) : data && data.length > 0 ? (
+                        data.map((review: Review, index: number) => (
+                          <TableRow key={review.id ?? index}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{review.DocumentName}</TableCell>
+                            <TableCell>{review.Organization}</TableCell>
+                            <TableCell>{review.Date}</TableCell>
+                            <TableCell>{review.Project}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="contained"
+                                className={`${styles.statusButton} ${
+                                  review.Status === "Completed"
+                                    ? styles.completed
+                                    : styles.pending
+                                }`}
+                              >
+                                {review.Status}
+                              </Button>
                             </TableCell>
                           </TableRow>
-                        ) : error ? (
-                          <TableRow>
-                            <TableCell colSpan={6} align="center">
-                              Error loading data
-                            </TableCell>
-                          </TableRow>
-                        ) : data && data.length > 0 ? (
-                          data.map((review: Review, index: number) => (
-                            <TableRow key={review.id ?? index}>
-                              <TableCell>{index + 1}</TableCell>
-                              <TableCell>{review.DocumentName}</TableCell>
-                              <TableCell>{review.Organization}</TableCell>
-                              <TableCell>{review.Date}</TableCell>
-                              <TableCell>{review.Project}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="contained"
-                                  className={`${styles.statusButton} ${
-                                    review.Status === "Completed"
-                                      ? styles.completed
-                                      : styles.pending
-                                  }`}
-                                >
-                                  {review.Status}
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={6} align="center">
-                              No data available
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            No data available
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </Box>
             </Box>
           </Box>
         </Box>
+      </Box>
 
       {/* Three-dot Menu */}
       <Menu
@@ -841,7 +917,8 @@ const DashboardPage = () => {
         </DialogTitle>
         <DialogContent>
           <DialogContentText className={styles.dialogContent}>
-            Are you sure you want to delete "{documentToDelete?.document_name}"? This action cannot be undone.
+            Are you sure you want to delete "{documentToDelete?.document_name}"?
+            This action cannot be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions className={styles.dialogActions}>

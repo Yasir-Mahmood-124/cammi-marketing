@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/theme/Providers";
 import "typeface-glacial-indifference";
 import GlobalRefreshWarning from "@/components/GlobalRefreshWarning";
+import { OnboardingProvider } from '@/components/onboarding/OnboardingProvider';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +31,9 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Providers>
           <GlobalRefreshWarning />
-          {children}
+          <OnboardingProvider>
+            {children}
+          </OnboardingProvider>
         </Providers>
       </body>
     </html>
