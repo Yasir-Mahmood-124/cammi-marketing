@@ -1,9 +1,10 @@
 import React from "react";
 import ComingSoon from "@/components/ComingSoon";
+import Recommendation from "@/assests/gif/Recommendations.gif"
 
 const page = () => {
   return (
-    <ComingSoon />
+    <ComingSoon gifSrc={Recommendation} />
   );
 };
 

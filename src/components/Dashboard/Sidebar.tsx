@@ -292,6 +292,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
     <Drawer
       variant="permanent"
       className={className}
+      data-tour="sidebar"
       sx={{
         width: isCollapsed ? 70 : 240,
         flexShrink: 0,
@@ -353,7 +354,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
           </IconButton>
         </Box>
 
-        {/* ✅ SCROLLABLE CONTENT AREA - THIS WAS MISSING! */}
+        {/* SCROLLABLE CONTENT AREA */}
         <Box
           sx={{
             flexGrow: 1,
@@ -370,6 +371,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
             <ListItem disablePadding>
               <Tooltip title={isCollapsed ? "Dashboard" : ""} placement="right">
                 <ListItemButton
+                  data-tour="sidebar-dashboard"
                   onClick={() => handleSubmenuClick("Dashboard", "", false)}
                   sx={{
                     borderRadius: 1,
@@ -416,6 +418,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
                   <ListItem disablePadding>
                     <Tooltip title={isCollapsed ? item.text : ""} placement="right">
                       <ListItemButton
+                        data-tour={`sidebar-${item.text.toLowerCase()}`}
                         onClick={() => handleMenuClick(item.text, true)}
                         sx={{
                           borderRadius: 1,
@@ -500,6 +503,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
                   <ListItem disablePadding>
                     <Tooltip title={isCollapsed ? item.text : ""} placement="right">
                       <ListItemButton
+                        data-tour={`sidebar-${item.text.toLowerCase().replace(/\s+/g, '-')}`}
                         onClick={() => item.subItems ? handleMenuClick(item.text, true) : handleSubmenuClick(item.text, "", false)}
                         sx={{
                           borderRadius: 1,
@@ -584,6 +588,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
               <ListItem disablePadding>
                 <Tooltip title={isCollapsed ? "Feedback" : ""} placement="right">
                   <ListItemButton
+                    data-tour="sidebar-feedback"
                     onClick={() => handleSubmenuClick("Feedback", "", false)}
                     sx={{
                       borderRadius: 1,
@@ -622,6 +627,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
         {!isCollapsed && (
           <Box>
             <Box
+              data-tour="sidebar-create-project"
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -686,6 +692,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, classNam
         {isCollapsed && (
           <Box sx={{ p: 1.5, display: "flex", justifyContent: "center" }}>
             <Box
+              data-tour="sidebar-create-project"
               sx={{
                 width: 40,
                 height: 40,

@@ -1,12 +1,13 @@
 // src/components/onboarding/tours/DashboardTour.tsx
 
-"use client"; // ✅ Required for App Router
+"use client";
 
 import { SplashScreen } from "@/assests/icons";
 import { Step } from "react-joyride";
-import { Dialog, Box, Avatar, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 
 export const DashboardTourSteps: Step[] = [
+  // Step 1: Welcome Splash Screen
   {
     target: "body",
     placement: "center",
@@ -14,7 +15,6 @@ export const DashboardTourSteps: Step[] = [
     hideFooter: true,
     hideCloseButton: true,
     disableOverlayClose: false,
-
     styles: {
       options: {
         width: "auto",
@@ -35,7 +35,6 @@ export const DashboardTourSteps: Step[] = [
         padding: 0,
       },
     },
-
     content: (
       <Box>
         <Box
@@ -51,7 +50,6 @@ export const DashboardTourSteps: Step[] = [
           }}
         >
           <SplashScreen />
-
           <Box
             sx={{
               flex: 1,
@@ -77,30 +75,24 @@ export const DashboardTourSteps: Step[] = [
                   Cammi.
                 </Box>
               </Typography>
-
               <Typography fontSize={12} color="#555" mb={0.6} lineHeight={1.5}>
                 I'm here to make marketing feel simple, not stressful.
               </Typography>
-
               <Typography fontSize={12} color="#555" mb={0.6} lineHeight={1.5}>
                 You don't need a big team or endless hours to build something great - just a clear plan, a consistent voice, and a little help along the way.
               </Typography>
-
               <Typography fontSize={12} color="#555" mb={0.6} lineHeight={1.5}>
                 Think of me as your marketing partner, the one who helps you turn ideas into action.
               </Typography>
-
               <Typography fontSize={12} color="#555" mb={0.8} lineHeight={1.5}>
                 I'll help you stay on message, keep things organized, and give you the confidence to move your business forward with clarity and ease.
               </Typography>
-
               <Typography fontSize={12} fontWeight={500} color="#FF2E8E" lineHeight={1.5}>
                 Let's start by getting to know you a bit better. I have ten questions then I could put together your go-to-market strategy together for you!
               </Typography>
             </Box>
           </Box>
         </Box>
-
         <Typography 
           textAlign="center" 
           fontSize={13} 
@@ -112,362 +104,225 @@ export const DashboardTourSteps: Step[] = [
       </Box>
     ),
   },
+
+  // Step 2: Dashboard Side Panel
   {
-    target: '[data-tour="dashboard-main-area"]',
+    target: '[data-tour="sidebar-dashboard"]',
     content: (
       <div>
-        <h3
-          style={{
-            marginTop: 0,
-            marginBottom: "12px",
-            color: "#000",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
           Dashboard 📊
         </h3>
-        <p
-          style={{
-            margin: 0,
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.6",
-          }}
-        >
-          Your central hub where you can view recent quarterly and monthly
-          reports from all your important projects.
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Your central hub with recent activity and quick stats right at your fingertips.
         </p>
-        <div
-          style={{
-            marginTop: "16px",
-            padding: "12px",
-            backgroundColor: "#F0F8FF",
-            borderRadius: "8px",
-            borderLeft: "3px solid #3EA3FF",
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              color: "#3EA3FF",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            💡 Quick Tip: Use the search bar to quickly find specific documents!
-          </p>
-        </div>
       </div>
     ),
     placement: "right",
-    spotlightClicks: true,
+    disableBeacon: true,
   },
+
+  // Step 3: Clarify Side Panel
   {
-    target: '[data-tour="welcome-section"]',
+    target: '[data-tour="sidebar-clarify"]',
     content: (
       <div>
-        <h3
-          style={{
-            marginTop: 0,
-            marginBottom: "12px",
-            color: "#000",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
-          Welcome Header 👋
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Clarify 🎯
         </h3>
-        <p
-          style={{
-            margin: 0,
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.6",
-          }}
-        >
-          Your personalized welcome message and quick search access. Use the
-          search bar to instantly find any document in your workspace.
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Map your business priorities, resources and budget for your upcoming year.
         </p>
       </div>
     ),
-    placement: "bottom",
+    placement: "right",
+    disableBeacon: true,
   },
+
+  // Step 4: Align Side Panel
+  {
+    target: '[data-tour="sidebar-align"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Align 📋
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Break your plan into quarterly chunks and define the key activities for each.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 5: Mobilize Side Panel
+  {
+    target: '[data-tour="sidebar-mobilize"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Mobilize 🚀
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Break your plan into quarterly chunks and define the key activities for each.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 6: Monitor Side Panel
+  {
+    target: '[data-tour="sidebar-monitor"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Monitor 📈
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Monitor your progress and performance.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 7: Iterate Side Panel
+  {
+    target: '[data-tour="sidebar-iterate"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Iterate 🔄
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Coming Soon: Implement improvements.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 8: Scheduler Side Panel
+  {
+    target: '[data-tour="sidebar-scheduler"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Scheduler 📅
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Schedule LinkedIn posts or view your content calendar at a glance.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 9: Brand Setup Side Panel
+  {
+    target: '[data-tour="sidebar-brand-setup"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Brand Setup 🎨
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Add all your existing brand information here to keep everything aligned.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 10: Feedback Side Panel
+  {
+    target: '[data-tour="sidebar-feedback"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Feedback 💬
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Tell us what you think—your feedback helps us get better.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 11: Create Project Side Panel
+  {
+    target: '[data-tour="sidebar-create-project"]',
+    content: (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
+          Create Project 🏢
+        </h3>
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Manage your organizations—switch between them or create a new one anytime.
+        </p>
+      </div>
+    ),
+    placement: "right",
+    disableBeacon: true,
+  },
+
+  // Step 12: My Documents
   {
     target: '[data-tour="my-documents-section"]',
     content: (
       <div>
-        <h3
-          style={{
-            marginTop: 0,
-            marginBottom: "12px",
-            color: "#000",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
           My Documents 📁
         </h3>
-        <p
-          style={{
-            margin: "0 0 12px 0",
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.6",
-          }}
-        >
-          All your generated documents are displayed here. Each document card
-          shows:
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Here you can see your created documents.
         </p>
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: "20px",
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.8",
-          }}
-        >
-          <li>Document name and creation date</li>
-          <li>Quick preview by clicking the card</li>
-          <li>Rename or delete options via the three-dot menu</li>
-        </ul>
       </div>
     ),
     placement: "bottom",
-  },
-  {
-    target: '[data-tour="first-document-card"]',
-    content: (
-      <div>
-        <h3
-          style={{
-            marginTop: 0,
-            marginBottom: "12px",
-            color: "#000",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
-          Document Card 📄
-        </h3>
-        <p
-          style={{
-            margin: "0 0 12px 0",
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.6",
-          }}
-        >
-          Click on any document card to:
-        </p>
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: "20px",
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.8",
-          }}
-        >
-          <li>
-            <strong>Preview</strong> the full document
-          </li>
-          <li>
-            <strong>Download</strong> as DOCX
-          </li>
-          <li>
-            <strong>Edit</strong> the document name
-          </li>
-        </ul>
-        <div
-          style={{
-            marginTop: "12px",
-            padding: "10px",
-            backgroundColor: "#FFF9E6",
-            borderRadius: "6px",
-            fontSize: "12px",
-            color: "#856404",
-          }}
-        >
-          ⚡ Pro Tip: Click the three-dot menu for quick actions!
-        </div>
-      </div>
-    ),
-    placement: "right",
     disableBeacon: true,
   },
-  {
-    target: '[data-tour="search-bar-container"]',
-    content: (
-      <div>
-        <h3
-          style={{
-            marginTop: 0,
-            marginBottom: "12px",
-            color: "#000",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
-          Search Documents 🔍
-        </h3>
-        <p
-          style={{
-            margin: 0,
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.6",
-          }}
-        >
-          Quickly find any document by typing its name. The search is real-time
-          and will filter your documents as you type.
-        </p>
-      </div>
-    ),
-    placement: "bottom",
-  },
+
+  // Step 13: CAMMI Expert Review
   {
     target: '[data-tour="expert-review-section"]',
     content: (
       <div>
-        <h3
-          style={{
-            marginTop: 0,
-            marginBottom: "12px",
-            color: "#000",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
+        <h3 style={{ marginTop: 0, marginBottom: "12px", color: "#000", fontSize: "18px", fontWeight: 600 }}>
           CAMMI Expert Review 🎯
         </h3>
-        <p
-          style={{
-            margin: 0,
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.6",
-          }}
-        >
-          Track the status of your documents that are under expert review.
-          You'll see:
+        <p style={{ margin: 0, color: "#666", fontSize: "14px", lineHeight: "1.6" }}>
+          Here you can see expert reviewed documents status.
         </p>
-        <ul
-          style={{
-            margin: "8px 0 0 0",
-            paddingLeft: "20px",
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.8",
-          }}
-        >
-          <li>Document name and organization</li>
-          <li>Review date and project</li>
-          <li>Current status (Completed/Pending)</li>
-        </ul>
       </div>
     ),
     placement: "top",
-  },
-  {
-    target: '[data-tour="sidebar"]',
-    content: (
-      <div>
-        <h3
-          style={{
-            marginTop: 0,
-            marginBottom: "12px",
-            color: "#000",
-            fontSize: "18px",
-            fontWeight: 600,
-          }}
-        >
-          Navigation Sidebar 🗂️
-        </h3>
-        <p
-          style={{
-            margin: "0 0 12px 0",
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.6",
-          }}
-        >
-          Use the sidebar to navigate between different sections:
-        </p>
-        <ul
-          style={{
-            margin: 0,
-            paddingLeft: "20px",
-            color: "#666",
-            fontSize: "14px",
-            lineHeight: "1.8",
-          }}
-        >
-          <li>
-            <strong>Clarify</strong> - Strategic planning documents
-          </li>
-          <li>
-            <strong>Align</strong> - Marketing alignment tools
-          </li>
-          <li>
-            <strong>Mobilize</strong> - Content creation
-          </li>
-          <li>
-            <strong>Monitor</strong> - Performance tracking
-          </li>
-          <li>
-            <strong>Iterate</strong> - Optimization tools
-          </li>
-        </ul>
-      </div>
-    ),
-    placement: "right",
     disableBeacon: true,
   },
+
+  // Final Step: Completion
   {
     target: "body",
     content: (
       <div style={{ textAlign: "center" }}>
-        <h2
-          style={{
-            marginTop: 0,
-            marginBottom: "16px",
-            color: "#000",
-            fontSize: "24px",
-            fontWeight: 600,
-          }}
-        >
+        <h2 style={{ marginTop: 0, marginBottom: "16px", color: "#000", fontSize: "24px", fontWeight: 600 }}>
           You're All Set! 🎉
         </h2>
-        <p
-          style={{
-            margin: "0 0 16px 0",
-            color: "#666",
-            fontSize: "15px",
-            lineHeight: "1.6",
-          }}
-        >
-          You now know the basics of your dashboard. Feel free to explore and
-          start creating amazing marketing content!
+        <p style={{ margin: "0 0 16px 0", color: "#666", fontSize: "15px", lineHeight: "1.6" }}>
+          You now know the basics of navigating CAMMI. Feel free to explore and start creating amazing marketing content!
         </p>
-        <div
-          style={{
-            padding: "16px",
-            backgroundColor: "#E8F5E9",
-            borderRadius: "8px",
-            marginTop: "16px",
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              color: "#2E7D32",
-              fontSize: "14px",
-              fontWeight: 500,
-            }}
-          >
-            ✨ Need help? Click the help icon in the top-right corner anytime!
+        <div style={{ padding: "16px", backgroundColor: "#E8F5E9", borderRadius: "8px", marginTop: "16px" }}>
+          <p style={{ margin: 0, color: "#2E7D32", fontSize: "14px", fontWeight: 500 }}>
+            ✨ Ready to get started? Click "Finish" to begin your journey!
           </p>
         </div>
       </div>
