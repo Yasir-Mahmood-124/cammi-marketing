@@ -1,10 +1,10 @@
-// src/components/onboarding/usePageTour.ts
+// src/components/onboarding/tours/dashboardTour/usePageTour.ts
 
 "use client";
 
 import { useEffect, useCallback } from 'react';
 import { Step } from 'react-joyride';
-import { useOnboarding, TourType } from './OnboardingProvider';
+import { useOnboarding, TourType } from '../../OnboardingProvider';
 
 interface UsePageTourOptions {
   tourType: TourType;

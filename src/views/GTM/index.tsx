@@ -38,7 +38,9 @@ import {
 } from "@/redux/services/gtm/gtmSlice";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
-import { useUserInputTour } from "@/components/onboarding/useUserInputTour";
+import { useUserInputTour } from "@/components/onboarding/tours/userInputTour/useUserInputTour";
+// ✅ NEW: Import Final Preview tour hook
+import { useFinalPreviewTour } from "@/components/onboarding/tours/finalPreviewTour/useFinalPreviewTour";
 
 interface Question {
   id: number;
@@ -63,6 +65,8 @@ const GTMPage: React.FC = () => {
   const [isRehydrated, setIsRehydrated] = useState(false);
   // ✅ NEW: Track when typing animation is complete
   const [isTypingComplete, setIsTypingComplete] = useState(false);
+  // ✅ NEW: Track when Final Preview is ready for tour
+  const [isFinalPreviewReady, setIsFinalPreviewReady] = useState(false);
 
   // Get state from Redux
   const {
@@ -96,7 +100,7 @@ const GTMPage: React.FC = () => {
     currentQuestion?.answer && currentQuestion.answer.trim() !== ""
   );
 
-  // Check if components are actually rendered and ready
+  // Check if components are actually rendered and ready for User Input Tour
   const componentsReady =
     view === "questions" &&
     questions.length > 0 &&
@@ -121,8 +125,33 @@ const GTMPage: React.FC = () => {
     readyForRegenerateStep,
   });
 
-  // ✅ UPDATED: Pass readyForRegenerateStep instead of hasAnswer
+  // ✅ User Input Tour (existing)
   useUserInputTour(componentsReady, readyForRegenerateStep);
+
+  // ✅ NEW: Final Preview Tour
+  console.log("🎯 [Final Preview Tour] Conditions:", {
+    view,
+    isFinalPreviewReady,
+    questionsLength: questions.length,
+    isRehydrated,
+  });
+
+  useFinalPreviewTour({ isReady: isFinalPreviewReady });
+
+  // ✅ NEW: Set Final Preview ready when view changes to preview
+  useEffect(() => {
+    if (view === "preview" && questions.length > 0 && isRehydrated && !isGenerating) {
+      console.log("✅ [Final Preview] Setting ready state after delay");
+      // Small delay to ensure DOM is fully rendered
+      const timer = setTimeout(() => {
+        setIsFinalPreviewReady(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsFinalPreviewReady(false);
+    }
+  }, [view, questions.length, isRehydrated, isGenerating]);
 
   // ✅ NEW: Reset typing state when answer changes or question changes
   useEffect(() => {
@@ -902,6 +931,7 @@ const GTMPage: React.FC = () => {
               }}
             >
               <Box sx={{ width: "100%" }}>
+                {/* ✅ FinalPreview already has data-tour="document-preview" */}
                 <FinalPreview
                   questionsAnswers={questions}
                   onAnswerUpdate={handleAnswerUpdate}
@@ -914,7 +944,9 @@ const GTMPage: React.FC = () => {
                   alignItems: "flex-end",
                 }}
               >
+                {/* ✅ NEW: Added data-tour attribute for Final Preview Tour Step 2 */}
                 <Button
+                  data-tour="generate-document-button"
                   variant="contained"
                   endIcon={<ArrowForwardIcon sx={{ fontSize: "14px" }} />}
                   onClick={handleGenerateDocument}

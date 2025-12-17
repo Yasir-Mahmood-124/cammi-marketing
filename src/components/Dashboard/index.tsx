@@ -41,8 +41,8 @@ import toast from "react-hot-toast";
 import styles from "./style.module.scss";
 
 // ✅ NEW: Import the usePageTour hook
-import { usePageTour } from "@/components/onboarding/usePageTour";
-import { DashboardTourSteps } from "@/components/onboarding/tours/DashboardTour";
+import { usePageTour } from "@/components/onboarding/tours/dashboardTour/usePageTour";
+import { DashboardTourSteps } from "@/components/onboarding/tours/dashboardTour/DashboardTour";
 
 interface DocumentItem {
   document_id?: string;

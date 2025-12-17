@@ -38,7 +38,7 @@ import {
 } from "@/redux/services/kmf/kmfSlice";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
-import { useUserInputTour } from "@/components/onboarding/useUserInputTour";
+import { useUserInputTour } from "@/components/onboarding/tours/userInputTour/useUserInputTour";
 
 interface Question {
   id: number;

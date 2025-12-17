@@ -1,10 +1,10 @@
-// src/components/onboarding/useUserInputTour.ts
+// src/components/onboarding/tours/userInputTour/useUserInputTour.ts
 
 "use client";
 
 import { useEffect, useCallback, useState, useRef } from 'react';
-import { useOnboarding } from './OnboardingProvider';
-import { UserInputTourSteps, UserInputRegenerateStep } from './tours/UserInputTour';
+import { useOnboarding } from '../../OnboardingProvider';
+import { UserInputTourSteps, UserInputRegenerateStep } from './UserInputTour';
 
 interface UseUserInputTourProps {
   isReady: boolean;  // Are the components rendered and ready?

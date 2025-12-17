@@ -17,7 +17,7 @@ import Joyride, {
 } from "react-joyride";
 import { usePathname } from "next/navigation";
 import Cookies from "js-cookie";
-import { CustomTooltip } from "./tours/DashboardTour";
+import { CustomTooltip } from "./tours/dashboardTour/DashboardTour";
 import { 
   useUpdateOnboardingStatusMutation,
   type OnboardingStatusKey 
