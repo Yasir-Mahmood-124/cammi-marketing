@@ -38,6 +38,7 @@ import {
 } from "@/redux/services/gtm/gtmSlice";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
+import { useUserInputTour } from "@/components/onboarding/useUserInputTour";
 
 interface Question {
   id: number;
@@ -57,7 +58,7 @@ const GTMPage: React.FC = () => {
   const mountRecoveryTriggered = useRef(false);
   const initialMountFetchDone = useRef(false);
   const documentDownloadTriggered = useRef(false);
-  const isRefetchingQuestions = useRef(false); // 🔥 NEW: Track refetch state
+  const isRefetchingQuestions = useRef(false);
 
   const [isRehydrated, setIsRehydrated] = useState(false);
 
@@ -82,8 +83,39 @@ const GTMPage: React.FC = () => {
 
   // Redux mutation hooks
   const [refine, { isLoading: isRefining }] = useRefineMutation();
-  const [uploadTextFile, { isLoading: isUploading }] = useUploadTextFileMutation();
-  const [getDocxFile, { isLoading: isDownloadingDoc }] = useGetDocxFileMutation();
+  const [uploadTextFile, { isLoading: isUploading }] =
+    useUploadTextFileMutation();
+  const [getDocxFile, { isLoading: isDownloadingDoc }] =
+    useGetDocxFileMutation();
+
+  // Get current question and check if it has an answer
+  const currentQuestion = questions[currentQuestionIndex];
+  const hasAnswer = !!(
+    currentQuestion?.answer && currentQuestion.answer.trim() !== ""
+  );
+
+  // Check if components are actually rendered and ready
+  const componentsReady =
+    view === "questions" &&
+    questions.length > 0 &&
+    currentQuestion !== undefined &&
+    !isGenerating &&
+    !showDocumentPreview &&
+    isRehydrated;
+
+  console.log("🎯 [GTM Page] Tour conditions:", {
+    view,
+    questionsLength: questions.length,
+    hasCurrentQuestion: !!currentQuestion,
+    isGenerating,
+    showDocumentPreview,
+    isRehydrated,
+    componentsReady,
+    hasAnswer,
+  });
+
+  // Initialize the tour hook - pass both conditions separately
+  useUserInputTour(componentsReady, hasAnswer);
 
   // Wait for redux-persist to finish rehydrating
   useEffect(() => {
@@ -150,14 +182,16 @@ const GTMPage: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
-  // 🔥 NEW: Refetch unanswered questions when returning to questions view
+  // Refetch unanswered questions when returning to questions view
   const refetchQuestionsOnReturn = useCallback(() => {
     if (isRefetchingQuestions.current) {
       console.log("⏸️ [GTM Refetch] Already refetching, skipping");
       return;
     }
 
-    console.log("🔄 [GTM Refetch] User returned to questions view - refetching unanswered questions");
+    console.log(
+      "🔄 [GTM Refetch] User returned to questions view - refetching unanswered questions"
+    );
     isRefetchingQuestions.current = true;
 
     // Reset to prevent stale state
@@ -171,13 +205,15 @@ const GTMPage: React.FC = () => {
     }, 100);
   }, [dispatch]);
 
-  // 🔥 NEW: Detect when user returns to the page (tab visibility)
+  // Detect when user returns to the page (tab visibility)
   useEffect(() => {
     if (!isRehydrated) return;
 
     const handleVisibilityChange = () => {
       if (!document.hidden && view === "questions" && questions.length > 0) {
-        console.log("👁️ [GTM Visibility] User returned to tab - refetching questions");
+        console.log(
+          "👁️ [GTM Visibility] User returned to tab - refetching questions"
+        );
         refetchQuestionsOnReturn();
       }
     };
@@ -189,17 +225,17 @@ const GTMPage: React.FC = () => {
     };
   }, [isRehydrated, view, questions.length, refetchQuestionsOnReturn]);
 
-  // 🔥 NEW: Detect when component remounts on questions view
+  // Detect when component remounts on questions view
   useEffect(() => {
     if (!isRehydrated || !projectId) return;
 
-    // If we're on questions view and have questions, but user navigated away and came back
-    // OR if page was refreshed
     if (view === "questions" && questions.length > 0) {
       const hasNavigatedBack = !initialMountFetchDone.current;
-      
+
       if (hasNavigatedBack) {
-        console.log("🔄 [GTM Mount] Detected return to questions view - refetching");
+        console.log(
+          "🔄 [GTM Mount] Detected return to questions view - refetching"
+        );
         refetchQuestionsOnReturn();
         initialMountFetchDone.current = true;
       }
@@ -218,7 +254,7 @@ const GTMPage: React.FC = () => {
     };
   }, [dispatch, isGenerating, showDocumentPreview]);
 
-  // 🔥 UPDATED: Mount fetch - only runs ONCE on mount after rehydration
+  // Mount fetch - only runs ONCE on mount after rehydration
   useEffect(() => {
     if (!isRehydrated || !projectId) {
       return;
@@ -242,15 +278,15 @@ const GTMPage: React.FC = () => {
 
     // Always start by fetching unanswered questions
     console.log("🔄 [Mount Fetch] Fetching unanswered questions");
-    
-    // 🔥 Reset state before fetching
+
+    // Reset state before fetching
     dispatch(setCurrentQuestionIndex(0));
     dispatch(setAnsweredIds([]));
-    
+
     setTimeout(() => {
       dispatch(setShouldFetchUnanswered(true));
     }, 100);
-  }, [isRehydrated, projectId]);
+  }, [isRehydrated, projectId, dispatch, isGenerating, view, questions.length]);
 
   // Force manual refetch when shouldFetchUnanswered changes
   useEffect(() => {
@@ -278,7 +314,7 @@ const GTMPage: React.FC = () => {
     }
   }, [questions.length, currentQuestionIndex, dispatch]);
 
-  // 🔥 Handle document download after generation completion
+  // Handle document download after generation completion
   const handleDocumentDownload = useCallback(async () => {
     if (documentDownloadTriggered.current) {
       console.log("⏸️ [Download] Already triggered, skipping");
@@ -320,7 +356,7 @@ const GTMPage: React.FC = () => {
 
       toast.dismiss("download-doc");
       toast.success("Document ready for preview!");
-      
+
       console.log("✅ [GTM] Document downloaded successfully");
     } catch (error: any) {
       console.error("❌ [GTM Document] Download failed:", error);
@@ -394,13 +430,20 @@ const GTMPage: React.FC = () => {
     dispatch,
   ]);
 
-  // 🔥 Watch for completion message and trigger document download
+  // Watch for completion message and trigger document download
   useEffect(() => {
     if (hasReceivedCompletionMessage && !showDocumentPreview && !docxBase64) {
-      console.log("✅ [GTM] Generation complete - triggering document download");
+      console.log(
+        "✅ [GTM] Generation complete - triggering document download"
+      );
       handleDocumentDownload();
     }
-  }, [hasReceivedCompletionMessage, showDocumentPreview, docxBase64, handleDocumentDownload]);
+  }, [
+    hasReceivedCompletionMessage,
+    showDocumentPreview,
+    docxBase64,
+    handleDocumentDownload,
+  ]);
 
   // Safety: Watch for 100% progress without completion message
   useEffect(() => {
@@ -414,14 +457,9 @@ const GTMPage: React.FC = () => {
         dispatch(setCompletionMessageReceived(true));
       }, 2000);
     }
-  }, [
-    isGenerating,
-    generatingProgress,
-    hasReceivedCompletionMessage,
-    dispatch,
-  ]);
+  }, [isGenerating, generatingProgress, hasReceivedCompletionMessage, dispatch]);
 
-  // 🔥 UPDATED: Handle unanswered questions response
+  // Handle unanswered questions response
   useEffect(() => {
     if (!unansweredData) return;
 
@@ -456,14 +494,14 @@ const GTMPage: React.FC = () => {
       console.log(
         `✅ [Scenario 1] Found ${formattedQuestions.length} unanswered questions`
       );
-      
-      // 🔥 Reset state when setting new questions
+
+      // Reset state when setting new questions
       dispatch(setCurrentQuestionIndex(0));
       dispatch(setAnsweredIds([]));
       dispatch(setQuestions(formattedQuestions));
       dispatch(setView("questions"));
       dispatch(setShouldFetchUnanswered(false));
-      
+
       toast.success(`Loaded ${formattedQuestions.length} question(s)`);
     } else {
       // Scenario 2: No unanswered questions - fetch all questions for preview
@@ -621,7 +659,9 @@ const GTMPage: React.FC = () => {
         console.error(
           "❌ [GTM] WebSocket URL not configured in environment variables"
         );
-        toast.error("WebSocket configuration missing. Please contact support.");
+        toast.error(
+          "WebSocket configuration missing. Please contact support."
+        );
         return;
       }
 
@@ -668,7 +708,6 @@ const GTMPage: React.FC = () => {
   const isFetching = isFetchingUnanswered || isFetchingAll;
   const isError = isErrorUnanswered || isErrorAll;
 
-  const currentQuestion = questions[currentQuestionIndex];
   const hasValidCurrentQuestion = currentQuestion !== undefined;
 
   // Show loading screen while rehydrating
@@ -725,11 +764,7 @@ const GTMPage: React.FC = () => {
   }
 
   // Show loader when fetching data
-  if (
-    isFetching &&
-    questions.length === 0 &&
-    !isGenerating
-  ) {
+  if (isFetching && questions.length === 0 && !isGenerating) {
     return (
       <Box
         sx={{
@@ -743,7 +778,9 @@ const GTMPage: React.FC = () => {
         }}
       >
         <CircularProgress />
-        <div style={{ fontFamily: "Poppins", color: "#666", fontSize: "16px" }}>
+        <div
+          style={{ fontFamily: "Poppins", color: "#666", fontSize: "16px" }}
+        >
           Loading questions...
         </div>
       </Box>

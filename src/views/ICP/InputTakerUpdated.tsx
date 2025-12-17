@@ -222,6 +222,7 @@ const InputTakerUpdated: React.FC<InputTakerProps> = ({
         </h2>
 
         <div 
+          data-tour="question-list"
           ref={containerRef}
           className="input-taker-scroll"
           style={{
