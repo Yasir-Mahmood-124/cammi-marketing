@@ -32,7 +32,7 @@ const commonStepStyles = {
 export const UserInputTourSteps: Step[] = [
   // Step 1: Question Asked
   {
-    target: '[data-tour="question-box"]',  // ✅ CHANGED from "question-text"
+    target: '[data-tour="question-box"]',
     content: "Here you can see the question asked from you. Answer accurately for better results.",
     placement: "bottom",
     disableBeacon: true,
@@ -42,7 +42,7 @@ export const UserInputTourSteps: Step[] = [
       title: "Question asked",
       stepNumber: 1,
       totalSteps: 4,
-      isPartialCompletion: true,
+      // ✅ NO isPartialCompletion flag - if user skips here, tour completes
     },
   },
 
@@ -58,7 +58,7 @@ export const UserInputTourSteps: Step[] = [
       title: "Question List",
       stepNumber: 2,
       totalSteps: 4,
-      isPartialCompletion: true,
+      // ✅ NO isPartialCompletion flag - if user skips here, tour completes
     },
   },
 
@@ -74,6 +74,9 @@ export const UserInputTourSteps: Step[] = [
       title: "Your Input",
       stepNumber: 3,
       totalSteps: 4,
+      // ✅ ONLY THIS STEP has isPartialCompletion
+      // This tells the provider to PAUSE here and wait for user to generate answer
+      // But if user SKIPS, it will still complete the tour
       isPartialCompletion: true,
     },
   },
@@ -91,6 +94,7 @@ export const UserInputRegenerateStep: Step = {
     title: "Regenerate",
     stepNumber: 4,
     totalSteps: 4,
-    isPartialCompletion: false, // ✅ This is the FINAL step
+    // ✅ NO isPartialCompletion flag - this is the final step
+    // When this completes (or is skipped), tour marks complete
   },
 };

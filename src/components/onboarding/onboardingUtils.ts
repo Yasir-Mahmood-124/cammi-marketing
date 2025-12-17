@@ -1,6 +1,7 @@
 // src/components/onboarding/onboardingUtils.ts
 
 import { TourType } from './OnboardingProvider';
+import { getSessionId } from '@/utils/cookieUtils';
 
 /**
  * Utility functions for managing onboarding status in localStorage user object
@@ -68,8 +69,15 @@ export const getTourStatus = (tourType: TourType): boolean => {
 
 /**
  * Set the status of a specific tour
+ * @param tourType - The tour to update
+ * @param completed - Whether the tour is completed
+ * @param syncToBackend - Optional function to sync status to backend
  */
-export const setTourStatus = (tourType: TourType, completed: boolean): void => {
+export const setTourStatus = async (
+  tourType: TourType, 
+  completed: boolean,
+  syncToBackend?: (tourType: TourType, status: boolean) => Promise<void>
+): Promise<void> => {
   const user = getUser();
   if (!user) return;
   
@@ -80,6 +88,15 @@ export const setTourStatus = (tourType: TourType, completed: boolean): void => {
   updateOverallOnboardingStatus(user);
   
   saveUser(user);
+
+  // ✅ Optionally sync to backend
+  if (syncToBackend && completed) {
+    try {
+      await syncToBackend(tourType, completed);
+    } catch (error) {
+      console.error('Failed to sync tour status to backend:', error);
+    }
+  }
 };
 
 /**
@@ -186,4 +203,30 @@ export const getOnboardingProgress = (): number => {
  */
 export const getUserData = (): Partial<UserOnboardingData> | null => {
   return getUser();
+};
+
+/**
+ * ✅ NEW: Prepare payload for backend sync
+ */
+export const prepareBackendPayload = (tourType: TourType, completed: boolean = true) => {
+  const sessionId = getSessionId();
+  
+  if (!sessionId) {
+    console.warn('No session_id found in cookies');
+    return null;
+  }
+
+  const statusMap: Record<TourType, string> = {
+    dashboard: 'dashboard_status',
+    user_input: 'user_input_status',
+    document_preview: 'document_preview_status',
+    final_preview: 'final_preview_status',
+  };
+
+  return {
+    session_id: sessionId,
+    status: {
+      [statusMap[tourType]]: completed,
+    },
+  };
 };

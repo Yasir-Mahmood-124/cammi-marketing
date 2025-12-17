@@ -38,6 +38,7 @@ import {
 } from "@/redux/services/sr/srSlice";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
+import { useUserInputTour } from "@/components/onboarding/useUserInputTour";
 
 interface Question {
   id: number;
@@ -61,6 +62,9 @@ const SRPage: React.FC = () => {
 
   // 🔥 NEW: Track if upload was interrupted
   const [wasUploadInterrupted, setWasUploadInterrupted] = useState(false);
+  
+  // ✅ NEW: Track when typing animation is complete (for tour)
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   // Get state from Redux
   const {
@@ -90,6 +94,62 @@ const SRPage: React.FC = () => {
   // 🔥 IMPROVED: Load both WebSocket URLs from environment
   const uploadWebSocketUrl = process.env.NEXT_PUBLIC_UPLOAD_WEBSOCKET_URL as string;
   const realtimeWebSocketUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL as string;
+
+  // ✅ NEW: Get current question and check if it has an answer
+  const currentQuestion = questions[currentQuestionIndex];
+  const hasAnswer = !!(
+    currentQuestion?.answer && currentQuestion.answer.trim() !== ""
+  );
+
+  // ✅ NEW: Check if components are actually rendered and ready
+  const componentsReady =
+    view === "questions" &&
+    questions.length > 0 &&
+    currentQuestion !== undefined &&
+    !isGenerating &&
+    !showDocumentPreview;
+
+  // ✅ NEW: Only consider the answer ready when typing is complete
+  const readyForRegenerateStep = hasAnswer && isTypingComplete;
+
+  console.log("🎯 [SR Page] Tour conditions:", {
+    view,
+    questionsLength: questions.length,
+    hasCurrentQuestion: !!currentQuestion,
+    isGenerating,
+    showDocumentPreview,
+    componentsReady,
+    hasAnswer,
+    isTypingComplete,
+    readyForRegenerateStep,
+  });
+
+  // ✅ NEW: Initialize the tour hook
+  useUserInputTour(componentsReady, readyForRegenerateStep);
+
+  // ✅ NEW: Reset typing state when answer changes or question changes
+  useEffect(() => {
+    console.log('🔄 [SR] Answer changed, resetting typing state');
+    setIsTypingComplete(false);
+  }, [currentQuestion?.answer, currentQuestionIndex]);
+
+  // ✅ NEW: Debug logging for tour conditions
+  useEffect(() => {
+    console.log('🎯 [SR Tour Debug]', {
+      hasAnswer,
+      isTypingComplete,
+      readyForRegenerateStep,
+      regenerateButtonExists: !!document.querySelector('[data-tour="regenerate-button"]'),
+      userInputStatus: (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.user_input_status;
+        } catch {
+          return 'error';
+        }
+      })()
+    });
+  }, [hasAnswer, isTypingComplete, readyForRegenerateStep]);
 
   // 🔥 NEW: Handle interrupted upload on mount
   useEffect(() => {
@@ -619,6 +679,12 @@ const SRPage: React.FC = () => {
     dispatch(updateQuestionAnswer({ id, answer: newAnswer }));
   };
 
+  // ✅ NEW: Callback to handle typing completion
+  const handleTypingComplete = useCallback(() => {
+    console.log('✅ [SR] Typing animation complete');
+    setIsTypingComplete(true);
+  }, []);
+
   const handleGenerateDocument = async () => {
     try {
       documentFetchTriggered.current = false;
@@ -814,6 +880,7 @@ const SRPage: React.FC = () => {
                     onGenerate={handleGenerate}
                     onRegenerate={handleRegenerate}
                     onConfirm={handleConfirm}
+                    onTypingComplete={handleTypingComplete}
                   />
                 </Box>
 

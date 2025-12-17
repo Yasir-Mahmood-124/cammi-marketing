@@ -18,6 +18,7 @@ interface UserInputProps {
     onGenerate?: (prompt: string) => void;
     onRegenerate?: () => void;
     onConfirm?: () => void;
+    onTypingComplete?: () => void; // ✅ NEW: Callback when typing animation completes
 }
 
 const UserInput: React.FC<UserInputProps> = ({
@@ -28,7 +29,8 @@ const UserInput: React.FC<UserInputProps> = ({
     documentType,
     onGenerate,
     onRegenerate,
-    onConfirm
+    onConfirm,
+    onTypingComplete, // ✅ NEW
 }) => {
     const [inputValue, setInputValue] = useState('');
     const [displayedAnswer, setDisplayedAnswer] = useState('');
@@ -39,12 +41,14 @@ const UserInput: React.FC<UserInputProps> = ({
     const [refine, { isLoading: isRefining }] = useRefineMutation();
     const [addQuestion, { isLoading: isAddingQuestion }] = useAddQuestionMutation();
 
+    // ✅ UPDATED: Added typing completion callback
     useEffect(() => {
         if (!answer) {
             setDisplayedAnswer('');
             return;
         }
 
+        console.log('⌨️ [UserInput] Starting typing animation for answer:', answer.substring(0, 50) + '...');
         setIsTyping(true);
         setDisplayedAnswer('');
         let currentIndex = 0;
@@ -56,11 +60,23 @@ const UserInput: React.FC<UserInputProps> = ({
             } else {
                 setIsTyping(false);
                 clearInterval(typingInterval);
+                
+                // ✅ NEW: Notify parent that typing is complete
+                console.log('✅ [UserInput] Typing animation complete');
+                if (onTypingComplete) {
+                    // Small delay to ensure regenerate button is rendered
+                    setTimeout(() => {
+                        console.log('📢 [UserInput] Calling onTypingComplete callback');
+                        onTypingComplete();
+                    }, 100);
+                }
             }
         }, 10);
 
-        return () => clearInterval(typingInterval);
-    }, [answer]);
+        return () => {
+            clearInterval(typingInterval);
+        };
+    }, [answer, onTypingComplete]); // ✅ Added onTypingComplete to dependencies
 
     useEffect(() => {
         if (!isTyping && displayedAnswer && answerFieldRef.current) {
@@ -207,7 +223,7 @@ const UserInput: React.FC<UserInputProps> = ({
                 }}
             >
                 <Box
-                    data-tour="question-box"  // ✅ ADD THIS - Highlights the entire outer box
+                    data-tour="question-box"
                     sx={{
                         background: 'linear-gradient(#FAFAFA, #FAFAFA) padding-box, linear-gradient(135deg, #3EA3FF, #FF3C80) border-box',
                         border: '2px solid transparent',
@@ -231,7 +247,6 @@ const UserInput: React.FC<UserInputProps> = ({
                             {number}
                         </Typography>
                         <Typography
-                            // ❌ REMOVED: data-tour="question-text"
                             sx={{
                                 color: '#000',
                                 fontFamily: 'Poppins',

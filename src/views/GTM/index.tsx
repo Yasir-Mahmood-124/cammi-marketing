@@ -61,6 +61,8 @@ const GTMPage: React.FC = () => {
   const isRefetchingQuestions = useRef(false);
 
   const [isRehydrated, setIsRehydrated] = useState(false);
+  // ✅ NEW: Track when typing animation is complete
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
 
   // Get state from Redux
   const {
@@ -103,6 +105,9 @@ const GTMPage: React.FC = () => {
     !showDocumentPreview &&
     isRehydrated;
 
+  // ✅ NEW: Only consider the answer ready when typing is complete
+  const readyForRegenerateStep = hasAnswer && isTypingComplete;
+
   console.log("🎯 [GTM Page] Tour conditions:", {
     view,
     questionsLength: questions.length,
@@ -112,10 +117,36 @@ const GTMPage: React.FC = () => {
     isRehydrated,
     componentsReady,
     hasAnswer,
+    isTypingComplete,
+    readyForRegenerateStep,
   });
 
-  // Initialize the tour hook - pass both conditions separately
-  useUserInputTour(componentsReady, hasAnswer);
+  // ✅ UPDATED: Pass readyForRegenerateStep instead of hasAnswer
+  useUserInputTour(componentsReady, readyForRegenerateStep);
+
+  // ✅ NEW: Reset typing state when answer changes or question changes
+  useEffect(() => {
+    console.log('🔄 [GTM] Answer changed, resetting typing state');
+    setIsTypingComplete(false);
+  }, [currentQuestion?.answer, currentQuestionIndex]);
+
+  // ✅ NEW: Debug logging for tour conditions
+  useEffect(() => {
+    console.log('🎯 [Tour Debug]', {
+      hasAnswer,
+      isTypingComplete,
+      readyForRegenerateStep,
+      regenerateButtonExists: !!document.querySelector('[data-tour="regenerate-button"]'),
+      userInputStatus: (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.user_input_status;
+        } catch {
+          return 'error';
+        }
+      })()
+    });
+  }, [hasAnswer, isTypingComplete, readyForRegenerateStep]);
 
   // Wait for redux-persist to finish rehydrating
   useEffect(() => {
@@ -608,6 +639,12 @@ const GTMPage: React.FC = () => {
     dispatch(updateQuestionAnswer({ id, answer: newAnswer }));
   };
 
+  // ✅ NEW: Callback to handle typing completion
+  const handleTypingComplete = useCallback(() => {
+    console.log('✅ [GTM] Typing animation complete');
+    setIsTypingComplete(true);
+  }, []);
+
   const handleGenerateDocument = async () => {
     try {
       documentDownloadTriggered.current = false;
@@ -835,6 +872,7 @@ const GTMPage: React.FC = () => {
                       onGenerate={handleGenerate}
                       onRegenerate={handleRegenerate}
                       onConfirm={handleConfirm}
+                      onTypingComplete={handleTypingComplete}
                     />
                   </Box>
 

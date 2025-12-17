@@ -16,7 +16,12 @@ import Joyride, {
   TooltipRenderProps,
 } from "react-joyride";
 import { usePathname } from "next/navigation";
+import Cookies from "js-cookie";
 import { CustomTooltip } from "./tours/DashboardTour";
+import { 
+  useUpdateOnboardingStatusMutation,
+  type OnboardingStatusKey 
+} from "@/redux/services/onboarding/onboadingStatus";
 
 export type TourType =
   | "dashboard"
@@ -58,6 +63,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const [steps, setSteps] = useState<Step[]>([]);
   const [currentTour, setCurrentTour] = useState<TourType | null>(null);
   const pathname = usePathname();
+
+  // RTK Query mutation hook
+  const [updateOnboardingStatus] = useUpdateOnboardingStatusMutation();
 
   useEffect(() => {
     const checkOnboardingStatus = () => {
@@ -116,7 +124,49 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     setCurrentTour(null);
   }, []);
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  /**
+   * Sync onboarding status to backend
+   */
+  const syncStatusToBackend = useCallback(async (tourType: TourType) => {
+    try {
+      // Get session_id from cookies using js-cookie
+      const sessionId = Cookies.get('token');
+      
+      if (!sessionId) {
+        console.error('❌ [OnboardingProvider] No session_id found in cookies (token)');
+        return;
+      }
+
+      console.log('✅ [OnboardingProvider] Found session_id in cookies');
+
+      // Map tour type to status field
+      const statusMap: Record<TourType, OnboardingStatusKey> = {
+        dashboard: 'dashboard_status',
+        user_input: 'user_input_status',
+        document_preview: 'document_preview_status',
+        final_preview: 'final_preview_status',
+      };
+
+      const statusField = statusMap[tourType];
+      
+      // Create flat payload
+      const payload = {
+        session_id: sessionId,
+        [statusField]: true,
+      };
+      
+      console.log(`🔄 [OnboardingProvider] Syncing ${statusField} to backend...`);
+
+      // Call the mutation
+      const result = await updateOnboardingStatus(payload).unwrap();
+
+      console.log(`✅ [OnboardingProvider] Backend sync successful:`, result);
+    } catch (error: any) {
+      console.error(`❌ [OnboardingProvider] Failed to sync ${tourType} status to backend:`, error);
+    }
+  }, [updateOnboardingStatus]);
+
+  const handleJoyrideCallback = useCallback(async (data: CallBackProps) => {
     const { status, step } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
@@ -132,18 +182,54 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
             console.log(`📝 Before update:`, user);
 
-            // ✅ CHECK: Is this a partial completion or final completion?
+            const isSkipped = status === STATUS.SKIPPED;
             const isPartialCompletion = step?.data?.isPartialCompletion === true;
 
-            if (isPartialCompletion) {
-              console.log('⏸️ Partial tour completion - NOT updating status yet');
-              console.log('⏸️ Waiting for user to generate answer and see step 4...');
-              // ✅ DON'T clear currentTour - we need it to continue with step 4
-              // ✅ DON'T update localStorage
+            // If user SKIPPED, always update status
+            if (isSkipped) {
+              console.log('⏩ User skipped tour - marking as complete');
+              
+              if (currentTour === "dashboard") {
+                user.dashboard_status = true;
+              } else if (currentTour === "user_input") {
+                user.user_input_status = true;
+              } else if (currentTour === "document_preview") {
+                user.document_preview_status = true;
+              } else if (currentTour === "final_preview") {
+                user.final_preview_status = true;
+              }
+
+              // Check if all tours are completed
+              const allToursCompleted =
+                user.dashboard_status === true &&
+                user.user_input_status === true &&
+                user.document_preview_status === true &&
+                user.final_preview_status === true;
+
+              if (allToursCompleted) {
+                user.onboarding_status = true;
+                console.log('🎉 All tours completed! Setting onboarding_status to TRUE');
+              }
+
+              localStorage.setItem("user", JSON.stringify(user));
+              console.log(`📝 After update:`, user);
+              console.log(`✅ ${currentTour} tour marked as complete (skipped)`);
+              
+              // Sync to backend
+              await syncStatusToBackend(currentTour);
+              
+              setCurrentTour(null);
               return;
             }
 
-            // ✅ This is the FINAL step or user skipped - update the status
+            // User FINISHED - check if partial completion
+            if (isPartialCompletion) {
+              console.log('⏸️ Partial tour completion - NOT updating status yet');
+              console.log('⏸️ Waiting for user to generate answer and see step 4...');
+              return;
+            }
+
+            // FINAL step completion - update the status
             if (currentTour === "dashboard") {
               user.dashboard_status = true;
             } else if (currentTour === "user_input") {
@@ -171,6 +257,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
             console.log(`📝 After update:`, user);
             console.log(`✅ ${currentTour} tour completed and saved to localStorage!`);
+
+            // Sync to backend
+            await syncStatusToBackend(currentTour);
           }
         } catch (error) {
           console.error("❌ Error updating tour status:", error);
@@ -179,7 +268,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       setCurrentTour(null);
     }
-  };
+  }, [currentTour, syncStatusToBackend]);
 
   return (
     <OnboardingContext.Provider
