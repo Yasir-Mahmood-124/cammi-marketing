@@ -39,6 +39,8 @@ import {
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
 import { useUserInputTour } from "@/components/onboarding/tours/userInputTour/useUserInputTour";
+import { useFinalPreviewTour } from "@/components/onboarding/tours/finalPreviewTour/useFinalPreviewTour";
+import { useDocumentPreviewTour } from "@/components/onboarding/tours/documentPreview/useDocumentPreviewTour";
 
 interface Question {
   id: number;
@@ -62,6 +64,8 @@ const BSPage: React.FC = () => {
 
   const [wasUploadInterrupted, setWasUploadInterrupted] = useState(false);
   const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const [isFinalPreviewReady, setIsFinalPreviewReady] = useState(false);
+  const [isDocumentPreviewReady, setIsDocumentPreviewReady] = useState(false);
 
   const {
     view,
@@ -115,7 +119,38 @@ const BSPage: React.FC = () => {
     readyForRegenerateStep,
   });
 
+  // Tour hooks
   useUserInputTour(componentsReady, readyForRegenerateStep);
+  useFinalPreviewTour({ isReady: isFinalPreviewReady });
+  useDocumentPreviewTour({ isReady: isDocumentPreviewReady });
+
+  // Set Final Preview ready when view changes to preview
+  useEffect(() => {
+    if (view === "preview" && questions.length > 0 && !isGenerating) {
+      console.log("✅ [Final Preview] Setting ready state after delay");
+      const timer = setTimeout(() => {
+        setIsFinalPreviewReady(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsFinalPreviewReady(false);
+    }
+  }, [view, questions.length, isGenerating]);
+
+  // Set Document Preview ready when document is shown
+  useEffect(() => {
+    if (showDocumentPreview && docxBase64) {
+      console.log("✅ [Document Preview] Setting ready state after delay");
+      const timer = setTimeout(() => {
+        setIsDocumentPreviewReady(true);
+      }, 800);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsDocumentPreviewReady(false);
+    }
+  }, [showDocumentPreview, docxBase64]);
 
   useEffect(() => {
     console.log('🔄 [BS] Answer changed, resetting typing state');
@@ -735,6 +770,7 @@ const BSPage: React.FC = () => {
   }
 
   if (showDocumentPreview && docxBase64) {
+    console.log('🎯 [Document Preview] Rendering with tour ready:', isDocumentPreviewReady);
     return (
       <Box
         sx={{
@@ -888,6 +924,7 @@ const BSPage: React.FC = () => {
           {showButton && (
             <Box sx={{ position: "fixed", bottom: "20px", right: "70px" }}>
               <Button
+                data-tour="generate-document-button"
                 variant="contained"
                 endIcon={<ArrowForwardIcon sx={{ fontSize: "14px" }} />}
                 onClick={handleGenerateDocument}

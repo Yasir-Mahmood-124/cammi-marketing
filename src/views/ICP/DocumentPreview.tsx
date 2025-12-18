@@ -873,6 +873,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
         {/* Submit for Review Button */}
         <Button
+          data-tour="submit-for-review"
           variant="outlined"
           onClick={handleSubmitForReview}
           disabled={isReviewLoading}

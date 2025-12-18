@@ -39,6 +39,8 @@ import {
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
 import { useUserInputTour } from "@/components/onboarding/tours/userInputTour/useUserInputTour";
+import { useFinalPreviewTour } from "@/components/onboarding/tours/finalPreviewTour/useFinalPreviewTour";
+import { useDocumentPreviewTour } from "@/components/onboarding/tours/documentPreview/useDocumentPreviewTour";
 
 interface Question {
   id: number;
@@ -60,11 +62,10 @@ const ICPPage: React.FC = () => {
   const hasCheckedForRefetch = useRef(false);
   const refetchTimestamp = useRef(Date.now());
 
-  // 🔥 NEW: Track if upload was interrupted
   const [wasUploadInterrupted, setWasUploadInterrupted] = useState(false);
-  
-  // ✅ NEW: Track when typing animation is complete (for tour)
   const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const [isFinalPreviewReady, setIsFinalPreviewReady] = useState(false);
+  const [isDocumentPreviewReady, setIsDocumentPreviewReady] = useState(false);
 
   // Get state from Redux
   const {
@@ -91,17 +92,16 @@ const ICPPage: React.FC = () => {
     useUploadTextFileMutation();
   const [getDocxFile, { isLoading: isDownloading }] = useGetDocxFileMutation();
 
-  // 🔥 IMPROVED: Load both WebSocket URLs from environment
   const uploadWebSocketUrl = process.env.NEXT_PUBLIC_UPLOAD_WEBSOCKET_URL as string;
   const realtimeWebSocketUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL as string;
 
-  // ✅ NEW: Get current question and check if it has an answer
+  // Get current question and check if it has an answer
   const currentQuestion = questions[currentQuestionIndex];
   const hasAnswer = !!(
     currentQuestion?.answer && currentQuestion.answer.trim() !== ""
   );
 
-  // ✅ NEW: Check if components are actually rendered and ready
+  // Check if components are actually rendered and ready
   const componentsReady =
     view === "questions" &&
     questions.length > 0 &&
@@ -109,7 +109,6 @@ const ICPPage: React.FC = () => {
     !isGenerating &&
     !showDocumentPreview;
 
-  // ✅ NEW: Only consider the answer ready when typing is complete
   const readyForRegenerateStep = hasAnswer && isTypingComplete;
 
   console.log("🎯 [ICP Page] Tour conditions:", {
@@ -124,16 +123,46 @@ const ICPPage: React.FC = () => {
     readyForRegenerateStep,
   });
 
-  // ✅ NEW: Initialize the tour hook
+  // Tour hooks
   useUserInputTour(componentsReady, readyForRegenerateStep);
+  useFinalPreviewTour({ isReady: isFinalPreviewReady });
+  useDocumentPreviewTour({ isReady: isDocumentPreviewReady });
 
-  // ✅ NEW: Reset typing state when answer changes or question changes
+  // Set Final Preview ready when view changes to preview
+  useEffect(() => {
+    if (view === "preview" && questions.length > 0 && !isGenerating) {
+      console.log("✅ [Final Preview] Setting ready state after delay");
+      const timer = setTimeout(() => {
+        setIsFinalPreviewReady(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsFinalPreviewReady(false);
+    }
+  }, [view, questions.length, isGenerating]);
+
+  // Set Document Preview ready when document is shown
+  useEffect(() => {
+    if (showDocumentPreview && docxBase64) {
+      console.log("✅ [Document Preview] Setting ready state after delay");
+      const timer = setTimeout(() => {
+        setIsDocumentPreviewReady(true);
+      }, 800);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsDocumentPreviewReady(false);
+    }
+  }, [showDocumentPreview, docxBase64]);
+
+  // Reset typing state when answer changes or question changes
   useEffect(() => {
     console.log('🔄 [ICP] Answer changed, resetting typing state');
     setIsTypingComplete(false);
   }, [currentQuestion?.answer, currentQuestionIndex]);
 
-  // ✅ NEW: Debug logging for tour conditions
+  // Debug logging for tour conditions
   useEffect(() => {
     console.log('🎯 [ICP Tour Debug]', {
       hasAnswer,
@@ -151,22 +180,17 @@ const ICPPage: React.FC = () => {
     });
   }, [hasAnswer, isTypingComplete, readyForRegenerateStep]);
 
-  // 🔥 NEW: Handle interrupted upload on mount
+  // Handle interrupted upload on mount
   useEffect(() => {
-    // Check if upload was interrupted
     if (wasUploadInterrupted) {
       console.log("⚠️ [ICP] Upload was interrupted - showing message");
-
-      // Show interruption message
       toast.error(
         "Document analysis was interrupted due to page navigation or refresh. Please upload again.",
         { duration: 5000 }
       );
-
-      // Reset the flag
       setWasUploadInterrupted(false);
     }
-  }, []); // Run only on mount
+  }, []);
 
   // Get project_id from localStorage on component mount
   useEffect(() => {
@@ -183,13 +207,11 @@ const ICPPage: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
-  // 🔥 IMPROVED: Setup WebSocket URL for upload - using environment variable comparison
+  // Setup WebSocket URL for upload
   useEffect(() => {
     if (view === "initial" || view === "upload") {
-      // Check if current URL is NOT the upload URL
       const isNotUploadUrl = wsUrl && !wsUrl.startsWith(uploadWebSocketUrl);
       
-      // Only update if it's empty or set to a different URL (generation URL)
       if (!wsUrl || isNotUploadUrl) {
         console.log("🔗 [ICP] Setting upload WebSocket URL from ENV");
         dispatch(setWsUrl(uploadWebSocketUrl));
@@ -197,7 +219,7 @@ const ICPPage: React.FC = () => {
     }
   }, [view, wsUrl, dispatch, uploadWebSocketUrl]);
 
-  // 🔥 RTK Query for unanswered questions
+  // RTK Query for unanswered questions
   const {
     data: unansweredData,
     isLoading: isLoadingUnanswered,
@@ -214,7 +236,7 @@ const ICPPage: React.FC = () => {
     }
   );
 
-  // 🔥 RTK Query for all questions (answered)
+  // RTK Query for all questions (answered)
   const {
     data: allQuestionsData,
     isLoading: isLoadingAll,
@@ -231,18 +253,15 @@ const ICPPage: React.FC = () => {
     }
   );
 
-  // 🔥 Cleanup state when unmounting
+  // Cleanup state when unmounting
   useEffect(() => {
     return () => {
       console.log("🧹 [ICP Unmount] Cleaning up for fresh fetch on return");
 
-      // 🔥 NEW: Dismiss analyzing toast immediately when leaving page
       toast.dismiss("analyzing-doc");
       console.log("🧹 [ICP Unmount] Dismissed analyzing toast");
 
-      // Only clear if not generating or showing document
       if (!isGenerating && !showDocumentPreview) {
-        // If user was on questions view, prepare for refetch
         if (view === "questions" && questions.length > 0) {
           console.log(
             "📋 [ICP Unmount] Was on questions - will refetch on return"
@@ -255,7 +274,6 @@ const ICPPage: React.FC = () => {
           refetchTimestamp.current = Date.now();
         }
 
-        // If user was on preview, mark for refetch but DON'T clear view
         if (view === "preview" && questions.length > 0) {
           console.log(
             "📋 [ICP Unmount] Was on preview - will refetch on return"
@@ -269,18 +287,14 @@ const ICPPage: React.FC = () => {
     };
   }, [dispatch, isGenerating, showDocumentPreview, view, questions.length]);
 
-  // 🔥 On mount, check if we need to refetch questions
+  // On mount, check if we need to refetch questions
   useEffect(() => {
-    // Prevent duplicate checks on the same mount
     if (hasCheckedForRefetch.current) {
       return;
     }
 
-    // Only refetch if we have a projectId and not in a critical state
     if (projectId && !isGenerating && !showDocumentPreview) {
-      // Only auto-trigger if NOT on initial view
       if (view === "questions" && questions.length === 0) {
-        // User is on questions view but no questions - fetch them
         console.log(
           "📋 [ICP Mount] On questions view - fetching unanswered questions"
         );
@@ -291,7 +305,6 @@ const ICPPage: React.FC = () => {
           dispatch(setShouldFetchUnanswered(true));
         }, 100);
       } else if (view === "preview" && questions.length === 0) {
-        // User is on preview but no questions - fetch all answered
         console.log(
           "📋 [ICP Mount] On preview view - fetching all answered questions"
         );
@@ -302,7 +315,6 @@ const ICPPage: React.FC = () => {
           dispatch(setShouldFetchAll(true));
         }, 100);
       }
-      // DO NOT auto-fetch if view is "initial" - let user click Yes/No
     }
   }, [
     projectId,
@@ -313,7 +325,7 @@ const ICPPage: React.FC = () => {
     questions.length,
   ]);
 
-  // 🔥 Safety check - Reset currentQuestionIndex if out of bounds
+  // Safety check - Reset currentQuestionIndex if out of bounds
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= questions.length) {
       console.log(
@@ -358,7 +370,7 @@ const ICPPage: React.FC = () => {
     }
   }, [dispatch, getDocxFile]);
 
-  // ==================== MOUNT RECOVERY WITH WEBSOCKET RE-CONNECTION (ENHANCED) ====================
+  // Mount recovery
   useEffect(() => {
     if (mountRecoveryTriggered.current) {
       console.log(
@@ -446,7 +458,7 @@ const ICPPage: React.FC = () => {
     handleGenerationComplete,
   ]);
 
-  // Watch for completion message flag changes (backup)
+  // Watch for completion message flag changes
   useEffect(() => {
     if (
       hasReceivedCompletionMessage &&
@@ -457,7 +469,7 @@ const ICPPage: React.FC = () => {
     }
   }, [hasReceivedCompletionMessage, docxBase64, handleGenerationComplete]);
 
-  // 🔥 FIXED: Handle unanswered questions response
+  // Handle unanswered questions response
   useEffect(() => {
     if (unansweredData) {
       console.log(
@@ -487,7 +499,6 @@ const ICPPage: React.FC = () => {
           `${formattedQuestions.length} unanswered question(s) found. Please provide answers.`
         );
       } else {
-        // 🔥 FIXED: No toast here - just silently fetch all answered questions
         console.log(
           "✅ [ICP] No unanswered questions, fetching all answered questions"
         );
@@ -497,7 +508,7 @@ const ICPPage: React.FC = () => {
     }
   }, [unansweredData, dispatch]);
 
-  // 🔥 FIXED: Handle all questions (answered) response
+  // Handle all questions (answered) response
   useEffect(() => {
     if (allQuestionsData && allQuestionsData.questions) {
       console.log(
@@ -520,7 +531,6 @@ const ICPPage: React.FC = () => {
       dispatch(setView("preview"));
       dispatch(setShouldFetchAll(false));
 
-      // 🔥 FIXED: Only show toast if we have questions (meaningful result)
       if (formattedQuestions.length > 0) {
         toast.success("Processing complete! Preview ready.");
       }
@@ -532,10 +542,8 @@ const ICPPage: React.FC = () => {
     questions.length > 0 &&
     questions.every((q: Question) => q.answer.trim() !== "");
 
-  // When user clicks YES
   const handleYesClick = () => {
     console.log("📤 [ICP] User clicked Yes - preparing upload view");
-
     dispatch(setWsUrl(uploadWebSocketUrl));
     dispatch(setView("upload"));
   };
@@ -549,20 +557,17 @@ const ICPPage: React.FC = () => {
     dispatch(setShouldFetchUnanswered(true));
   };
 
-  // 🔥 NEW: Handle upload interruption
   const handleUploadInterrupted = () => {
     console.log("⚠️ [ICP] Upload interrupted - setting flag");
     setWasUploadInterrupted(true);
   };
 
-  // 🔥 FIXED: Handle upload complete with proper toast management
   const handleUploadComplete = (data: any) => {
     if (data.status === "processing_started") {
       return;
     }
 
     if (data.status === "analyzing_document") {
-      // 🔥 FIXED: Use toast.loading with unique ID to prevent duplicates
       toast.loading("Analyzing your document...", {
         id: "analyzing-doc",
         duration: Infinity,
@@ -571,7 +576,6 @@ const ICPPage: React.FC = () => {
     }
 
     if (data.status === "questions_need_answers" && data.not_found_questions) {
-      // 🔥 Dismiss analyzing toast
       toast.dismiss("analyzing-doc");
 
       const formattedQuestions: Question[] = data.not_found_questions.map(
@@ -595,7 +599,6 @@ const ICPPage: React.FC = () => {
     }
 
     if (data.status === "processing_complete") {
-      // 🔥 Dismiss analyzing toast
       toast.dismiss("analyzing-doc");
 
       if (data.results) {
@@ -612,14 +615,12 @@ const ICPPage: React.FC = () => {
           dispatch(setView("questions"));
           toast.success("Some questions need answers. Please review them.");
         } else {
-          // 🔥 FIXED: Don't show toast here - let the effect handle it
           console.log("📋 [ICP] All questions answered - fetching for preview");
           dispatch(setQuestions([]));
           refetchTimestamp.current = Date.now();
           dispatch(setShouldFetchAll(true));
         }
       } else {
-        // 🔥 FIXED: Don't show toast here - let the effect handle it
         console.log("📋 [ICP] Processing complete - fetching for preview");
         dispatch(setQuestions([]));
         refetchTimestamp.current = Date.now();
@@ -680,7 +681,6 @@ const ICPPage: React.FC = () => {
     dispatch(updateQuestionAnswer({ id, answer: newAnswer }));
   };
 
-  // ✅ NEW: Callback to handle typing completion
   const handleTypingComplete = useCallback(() => {
     console.log('✅ [ICP] Typing animation complete');
     setIsTypingComplete(true);
@@ -731,7 +731,6 @@ const ICPPage: React.FC = () => {
         error: "Failed to upload answers. Please try again.",
       });
 
-      // 🔥 Use the realtime WebSocket URL from environment
       const savedTokenForWs = Cookies.get("token");
       const websocketUrl = `${realtimeWebSocketUrl}?session_id=${savedTokenForWs}`;
 
@@ -753,17 +752,12 @@ const ICPPage: React.FC = () => {
       console.log("📦 [ICP] Project ID:", project_id);
       console.log("📦 [ICP] Dispatching Redux actions...");
 
-      // 🔥 Set URL FIRST
       dispatch(setWsUrl(websocketUrl));
-
       console.log("✅ [ICP] wsUrl dispatched to Redux");
 
-      // Small delay to ensure Redux state propagates
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // 🔥 Then set isGenerating
       dispatch(setIsGenerating(true));
-
       console.log("✅ [ICP] isGenerating=true dispatched to Redux");
       console.log(
         "⏳ [ICP] Waiting for middleware to establish WebSocket connection..."
@@ -772,7 +766,6 @@ const ICPPage: React.FC = () => {
       console.error("❌ [ICP Upload] Error:", err);
       toast.error("Upload failed. Please try again.");
 
-      // Reset state on error
       dispatch(setIsGenerating(false));
       dispatch(setWsUrl(""));
     }
@@ -801,6 +794,7 @@ const ICPPage: React.FC = () => {
   }
 
   if (showDocumentPreview && docxBase64) {
+    console.log('🎯 [Document Preview] Rendering with tour ready:', isDocumentPreviewReady);
     return (
       <Box
         sx={{
@@ -898,7 +892,6 @@ const ICPPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Show loading state while fetching preview data */}
           {view === "preview" && questions.length === 0 && isLoadingAll && (
             <Box
               sx={{
@@ -914,7 +907,6 @@ const ICPPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Only show preview when we have questions from API */}
           {view === "preview" && questions.length > 0 && (
             <Box
               sx={{
@@ -956,6 +948,7 @@ const ICPPage: React.FC = () => {
           {showButton && (
             <Box sx={{ position: "fixed", bottom: "20px", right: "70px" }}>
               <Button
+                data-tour="generate-document-button"
                 variant="contained"
                 endIcon={<ArrowForwardIcon sx={{ fontSize: "14px" }} />}
                 onClick={handleGenerateDocument}
