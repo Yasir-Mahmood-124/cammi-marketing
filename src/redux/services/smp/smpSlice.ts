@@ -1,4 +1,4 @@
-// redux/services/gtm/gtmSlice.ts
+// redux/services/smp/smpSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Question {
@@ -7,7 +7,7 @@ interface Question {
   answer: string;
 }
 
-interface GTMState {
+interface SMPState {
   view: "questions" | "preview";
   questions: Question[];
   currentQuestionIndex: number;
@@ -37,7 +37,7 @@ interface GTMState {
   resetTimestamp: number;
 }
 
-const initialState: GTMState = {
+const initialState: SMPState = {
   view: "questions",
   questions: [],
   currentQuestionIndex: 0,
@@ -59,11 +59,11 @@ const initialState: GTMState = {
   resetTimestamp: 0, // 🆕
 };
 
-const gtmSlice = createSlice({
-  name: "gtm",
+const smpSlice = createSlice({
+  name: "smp",
   initialState,
   reducers: {
-    setView: (state, action: PayloadAction<GTMState["view"]>) => {
+    setView: (state, action: PayloadAction<SMPState["view"]>) => {
       state.view = action.payload;
     },
     
@@ -209,8 +209,8 @@ const gtmSlice = createSlice({
       state.shouldFetchAll = action.payload;
     },
     
-    // 🆕 Updated resetGTMState to preserve projectId and set timestamp
-    resetGTMState: (state) => {
+    // 🆕 Updated resetSMPState to preserve projectId and set timestamp
+    resetSMPState: (state) => {
       return {
         ...initialState,
         projectId: state.projectId, // Preserve project ID
@@ -266,8 +266,8 @@ export const {
   setDocumentData,
   setShouldFetchUnanswered,
   setShouldFetchAll,
-  resetGTMState,
+  resetSMPState,
   resetForNewDocument,
-} = gtmSlice.actions;
+} = smpSlice.actions;
 
-export default gtmSlice.reducer;
+export default smpSlice.reducer;

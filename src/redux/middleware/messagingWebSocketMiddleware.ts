@@ -1,0 +1,236 @@
+// redux/middleware/messagingWebSocketMiddleware.ts
+import { Middleware } from '@reduxjs/toolkit';
+import { wsManager } from '../services/websocketManager';
+import {
+  setIsGenerating,
+  setWsUrl,
+  setGeneratingProgress,
+  setGeneratingContent,
+  appendGeneratingContent,
+  setCompletionMessageReceived,
+} from '../services/messaging/messagingSlice';
+
+let unsubscribeMessage: (() => void) | null = null;
+let unsubscribeError: (() => void) | null = null;
+let unsubscribeClose: (() => void) | null = null;
+let currentGenerationUrl: string | null = null;
+
+// 🔥 Get WebSocket base URL from environment variable
+const MESSAGING_WEBSOCKET_BASE_URL = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL || '';
+
+export const messagingWebSocketMiddleware: Middleware = (store) => (next) => (action) => {
+  const result = next(action);
+
+  // 🔥 Listen for BOTH wsUrl changes AND isGenerating changes
+  if (setWsUrl.match(action) || setIsGenerating.match(action)) {
+    const state = store.getState();
+    const { wsUrl, isGenerating } = state.messaging;
+
+    // 🔥 Dynamic check: URL must start with configured base URL
+    const isMessagingWebSocket = wsUrl && (
+      wsUrl.startsWith(MESSAGING_WEBSOCKET_BASE_URL) ||
+      wsUrl.includes('execute-api.us-east-1.amazonaws.com') // Fallback check
+    );
+
+    console.log("🔍 [MESSAGING WS Middleware] Action triggered:", action.type);
+    console.log("🔍 [MESSAGING WS Middleware] Current wsUrl:", wsUrl || 'null');
+    console.log("🔍 [MESSAGING WS Middleware] isGenerating:", isGenerating);
+    console.log("🔍 [MESSAGING WS Middleware] isMessagingWebSocket:", isMessagingWebSocket);
+    console.log("🔍 [MESSAGING WS Middleware] Expected base URL:", MESSAGING_WEBSOCKET_BASE_URL);
+
+    if (isMessagingWebSocket && isGenerating) {
+      console.log("╔════════════════════════════════════════════════════════════╗");
+      console.log("║    🌐 MESSAGING Global WebSocket Middleware Activated     ║");
+      console.log("╚════════════════════════════════════════════════════════════╝");
+      console.log("🔗 [MESSAGING Global WS] URL:", wsUrl);
+      console.log("🔗 [MESSAGING Global WS] isGenerating:", isGenerating);
+
+      // Cleanup previous listeners if URL changed
+      if (currentGenerationUrl && currentGenerationUrl !== wsUrl) {
+        console.log("🔄 [MESSAGING Global WS] URL changed, disconnecting old connection");
+        console.log("   Old URL:", currentGenerationUrl);
+        console.log("   New URL:", wsUrl);
+        
+        wsManager.disconnect();
+        
+        if (unsubscribeMessage) {
+          console.log("🧹 [MESSAGING Global WS] Unsubscribing old listeners");
+          unsubscribeMessage();
+          unsubscribeError?.();
+          unsubscribeClose?.();
+          unsubscribeMessage = null;
+          unsubscribeError = null;
+          unsubscribeClose = null;
+        }
+      }
+
+      // Avoid duplicate connections to same URL
+      if (currentGenerationUrl === wsUrl) {
+        console.log("⏭️ [MESSAGING Global WS] Already connected to this URL, skipping");
+        return result;
+      }
+
+      currentGenerationUrl = wsUrl;
+
+      // 🔥 Connect immediately
+      console.log("🔌 [MESSAGING Global WS] Initiating WebSocket connection...");
+      console.log("⏱️ [MESSAGING Global WS] Connection attempt at:", new Date().toISOString());
+      
+      wsManager.connect(wsUrl);
+
+      // 🔥 Setup message listener
+      unsubscribeMessage = wsManager.onMessage((message) => {
+        try {
+          const messagePreview = typeof message.body === 'number' 
+            ? `${message.body}%`
+            : typeof message.body === 'string' 
+            ? message.body.length > 50 
+              ? message.body.substring(0, 50) + '...' 
+              : message.body
+            : JSON.stringify(message.body);
+
+          console.log("📨 [MESSAGING Global WS] Message received:", {
+            action: message.action,
+            type: message.type,
+            body: messagePreview,
+            status: message.status,
+            timestamp: new Date().toISOString()
+          });
+
+          // ✅ Completion message
+          if (
+            message.action === "realtimetext" &&
+            message.body === "Document generated successfully!"
+          ) {
+            console.log("╔════════════════════════════════════════════════════════════╗");
+            console.log("║   🌐✅✅ MESSAGING GLOBAL COMPLETION MESSAGE RECEIVED ✅✅🌐   ║");
+            console.log("╚════════════════════════════════════════════════════════════╝");
+            console.log("💾 [MESSAGING Global WS] Dispatching completion flag to Redux");
+            
+            store.dispatch(setCompletionMessageReceived(true));
+            
+            console.log("🧹 [MESSAGING Global WS] Cleaning up WebSocket listeners");
+            if (unsubscribeMessage) {
+              unsubscribeMessage();
+              unsubscribeError?.();
+              unsubscribeClose?.();
+              unsubscribeMessage = null;
+              unsubscribeError = null;
+              unsubscribeClose = null;
+            }
+            
+            console.log("🔌 [MESSAGING Global WS] Disconnecting WebSocket");
+            wsManager.disconnect();
+            currentGenerationUrl = null;
+            
+            return;
+          }
+
+          // 📊 Progress update
+          if (message.action === "realtimetext" && typeof message.body === "number") {
+            const newProgress = message.body;
+            console.log("📊 [MESSAGING Global WS] Progress update:", newProgress + "%");
+            store.dispatch(setGeneratingProgress(newProgress));
+            return;
+          }
+
+          // 📄 Content chunk
+          if (message.type === "tier_completion" && message.data?.content?.content) {
+            const newContent = message.data.content.content;
+            console.log("📄 [MESSAGING Global WS] Content chunk received:", newContent.length, "chars");
+
+            const currentState = store.getState();
+            const currentContent = currentState.messaging.generatingContent;
+
+            if (currentContent === "Waiting for Document Generation...") {
+              console.log("📝 [MESSAGING Global WS] First content chunk - replacing placeholder");
+              store.dispatch(setGeneratingContent(newContent));
+            } else {
+              console.log("📝 [MESSAGING Global WS] Appending content chunk");
+              store.dispatch(appendGeneratingContent(newContent));
+            }
+            return;
+          }
+
+          // ✅ Status completion
+          if (message.status === "completed" || message.status === "complete") {
+            console.log("✅ [MESSAGING Global WS] Status completion indicator received");
+            store.dispatch(setCompletionMessageReceived(true));
+            
+            if (unsubscribeMessage) {
+              unsubscribeMessage();
+              unsubscribeError?.();
+              unsubscribeClose?.();
+              unsubscribeMessage = null;
+              unsubscribeError = null;
+              unsubscribeClose = null;
+            }
+            
+            wsManager.disconnect();
+            currentGenerationUrl = null;
+          }
+        } catch (err) {
+          console.error("❌ [MESSAGING Global WS] Message processing error:", err);
+          console.error("❌ [MESSAGING Global WS] Problematic message:", message);
+        }
+      });
+
+      // 🔥 Setup error listener
+      unsubscribeError = wsManager.onError((err) => {
+        console.error("╔════════════════════════════════════════════════════════════╗");
+        console.error("║              ❌ MESSAGING WEBSOCKET ERROR                  ║");
+        console.error("╚════════════════════════════════════════════════════════════╝");
+        console.error("❌ [MESSAGING Global WS] WebSocket error:", err);
+        console.error("❌ [MESSAGING Global WS] URL was:", wsUrl);
+        console.error("❌ [MESSAGING Global WS] Timestamp:", new Date().toISOString());
+      });
+
+      // 🔥 Setup close listener
+      unsubscribeClose = wsManager.onClose((event) => {
+        console.log("╔════════════════════════════════════════════════════════════╗");
+        console.log("║              🔗 MESSAGING WEBSOCKET CLOSED                 ║");
+        console.log("╚════════════════════════════════════════════════════════════╝");
+        console.log("🔗 [MESSAGING Global WS] WebSocket closed");
+        console.log("   └─ Code:", event.code);
+        console.log("   └─ Reason:", event.reason || 'No reason provided');
+        console.log("   └─ Clean close:", event.wasClean);
+        console.log("   └─ Timestamp:", new Date().toISOString());
+        
+        currentGenerationUrl = null;
+      });
+
+      console.log("✅ [MESSAGING Global WS] All listeners registered successfully");
+      
+    } else if (!isMessagingWebSocket && wsUrl) {
+      console.log("⚠️ [MESSAGING Global WS] URL present but doesn't match MESSAGING pattern");
+      console.log("   Provided URL:", wsUrl);
+      console.log("   Expected to start with:", MESSAGING_WEBSOCKET_BASE_URL);
+    }
+  }
+
+  // 🛑 Cleanup when generation stops
+  if (setIsGenerating.match(action) && action.payload === false) {
+    console.log("╔════════════════════════════════════════════════════════════╗");
+    console.log("║         🛑 MESSAGING GENERATION STOPPED - CLEANUP         ║");
+    console.log("╚════════════════════════════════════════════════════════════╝");
+    console.log("🌐 [MESSAGING Global WS] Generation stopped - cleaning up");
+    
+    if (unsubscribeMessage) {
+      console.log("🧹 [MESSAGING Global WS] Unsubscribing all listeners");
+      unsubscribeMessage();
+      unsubscribeError?.();
+      unsubscribeClose?.();
+      unsubscribeMessage = null;
+      unsubscribeError = null;
+      unsubscribeClose = null;
+    }
+    
+    console.log("🔌 [MESSAGING Global WS] Disconnecting WebSocket");
+    wsManager.disconnect();
+    currentGenerationUrl = null;
+    
+    console.log("✅ [MESSAGING Global WS] Cleanup complete");
+  }
+
+  return result;
+};

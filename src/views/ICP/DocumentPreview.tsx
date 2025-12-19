@@ -22,6 +22,10 @@ import { resetForNewDocument as resetKmf } from "@/redux/services/kmf/kmfSlice";
 import { resetForNewDocument as resetBs } from "@/redux/services/bs/bsSlice";
 import { resetForNewDocument as resetSr } from "@/redux/services/sr/srSlice";
 import { resetGTMState } from "@/redux/services/gtm/gtmSlice";
+import { resetSMPState } from "@/redux/services/smp/smpSlice";
+import { resetMRState } from "@/redux/services/mr/mrSlice";
+import { resetMessagingState } from "@/redux/services/messaging/messagingSlice";
+import { resetBrandState } from "@/redux/services/brand/brandSlice";
 import { AppDispatch } from "@/redux/store";
 import Cookies from "js-cookie";
 import EditHeadingDialog from "./EditHeadingDialog";
@@ -30,7 +34,16 @@ import toast from "react-hot-toast";
 interface DocumentPreviewProps {
   docxBase64: string;
   fileName: string;
-  documentType: "icp" | "kmf" | "bs" | "sr" | "gtm";
+  documentType:
+    | "icp"
+    | "kmf"
+    | "bs"
+    | "sr"
+    | "gtm"
+    | "smp"
+    | "mr"
+    | "messaging"
+    | "brand";
 }
 
 interface TableOfContentsItem {
@@ -76,6 +89,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       bs: "BS",
       sr: "SR",
       gtm: "GTM",
+      smp: "Strategy Marketing Plan",
+      mr: "Market Research",
+      messaging: "Messaging",
+      brand: "Brand",
     };
     return labels[docType] || docType.toUpperCase();
   };
@@ -363,7 +380,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     console.log(
       `💾 [DocumentPreview] ${displayName} document saved - resetting state`
     );
-    
+
     toast.success("Document saved successfully!");
 
     // Reset state for all document types
@@ -377,7 +394,18 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       dispatch(resetSr());
     } else if (documentType === "gtm") {
       dispatch(resetGTMState());
+    } else if (documentType === "smp") {
+      dispatch(resetSMPState());
+    } else if (documentType === "mr") {
+      dispatch(resetMRState());
+    } else if (documentType === "messaging") {
+      dispatch(resetMessagingState());
+    } else if (documentType === "brand") {
+      dispatch(resetBrandState());
     }
+
+    // Reload the page after resetting states
+    window.location.reload();
   };
 
   const scrollToSection = (id: string) => {

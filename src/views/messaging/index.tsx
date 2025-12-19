@@ -34,8 +34,8 @@ import {
   setCompletionMessageReceived,
   setCurrentQuestionIndex,
   setAnsweredIds,
-  resetGTMState,
-} from "@/redux/services/gtm/gtmSlice";
+  resetMessagingState,
+} from "@/redux/services/messaging/messagingSlice";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
 import { useUserInputTour } from "@/components/onboarding/tours/userInputTour/useUserInputTour";
@@ -55,7 +55,7 @@ interface CurrentProject {
   project_name: string;
 }
 
-const GTMPage: React.FC = () => {
+const MessagingPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const mountRecoveryTriggered = useRef(false);
   const initialMountFetchDone = useRef(false);
@@ -85,7 +85,7 @@ const GTMPage: React.FC = () => {
     generatingProgress,
     hasReceivedCompletionMessage,
     resetTimestamp, // 🆕 Added this
-  } = useSelector((state: RootState) => state.gtm);
+  } = useSelector((state: RootState) => state.messaging);
 
   // Redux mutation hooks
   const [refine, { isLoading: isRefining }] = useRefineMutation();
@@ -111,7 +111,7 @@ const GTMPage: React.FC = () => {
 
   const readyForRegenerateStep = hasAnswer && isTypingComplete;
 
-  console.log("🎯 [GTM Page] Tour conditions:", {
+  console.log("🎯 [Messaging Page] Tour conditions:", {
     view,
     questionsLength: questions.length,
     hasCurrentQuestion: !!currentQuestion,
@@ -159,7 +159,7 @@ const GTMPage: React.FC = () => {
 
   // Reset typing state when answer changes or question changes
   useEffect(() => {
-    console.log('🔄 [GTM] Answer changed, resetting typing state');
+    console.log('🔄 [Messaging] Answer changed, resetting typing state');
     setIsTypingComplete(false);
   }, [currentQuestion?.answer, currentQuestionIndex]);
 
@@ -184,7 +184,7 @@ const GTMPage: React.FC = () => {
   // Wait for redux-persist to finish rehydrating
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log("✅ [GTM] Redux rehydration complete");
+      console.log("✅ [Messaging] Redux rehydration complete");
       setIsRehydrated(true);
     }, 300);
 
@@ -201,7 +201,7 @@ const GTMPage: React.FC = () => {
   } = useGet_unanswered_questionsQuery(
     {
       project_id: projectId,
-      document_type: "gtm",
+      document_type: "messaging",
     },
     {
       skip: !shouldFetchUnanswered || !projectId || !isRehydrated,
@@ -221,7 +221,7 @@ const GTMPage: React.FC = () => {
   } = useGetQuestionsQuery(
     {
       project_id: projectId,
-      document_type: "gtm",
+      document_type: "messaging",
     },
     {
       skip: !shouldFetchAll || !projectId || !isRehydrated,
@@ -241,7 +241,7 @@ const GTMPage: React.FC = () => {
           dispatch(setProjectId(currentProject.project_id));
         }
       } catch (error) {
-        console.error("❌ [GTM Project] Error parsing currentProject:", error);
+        console.error("❌ [Messaging Project] Error parsing currentProject:", error);
       }
     }
   }, [dispatch, projectId]);
@@ -250,43 +250,43 @@ const GTMPage: React.FC = () => {
   useEffect(() => {
     if (resetTimestamp > 0 && isRehydrated && projectId) {
       console.log("╔════════════════════════════════════════════════════════════╗");
-      console.log("║          🔄 GTM STATE RESET DETECTED                      ║");
+      console.log("║          🔄 MESSAGING STATE RESET DETECTED                ║");
       console.log("╚════════════════════════════════════════════════════════════╝");
-      console.log(`📅 [GTM Reset] Reset timestamp: ${new Date(resetTimestamp).toISOString()}`);
-      console.log(`📦 [GTM Reset] Project ID: ${projectId}`);
+      console.log(`📅 [Messaging Reset] Reset timestamp: ${new Date(resetTimestamp).toISOString()}`);
+      console.log(`📦 [Messaging Reset] Project ID: ${projectId}`);
       
       // Reset all ref flags
-      console.log("🧹 [GTM Reset] Resetting all ref flags...");
+      console.log("🧹 [Messaging Reset] Resetting all ref flags...");
       initialMountFetchDone.current = false;
       mountRecoveryTriggered.current = false;
       documentDownloadTriggered.current = false;
       isRefetchingQuestions.current = false;
       
       // Reset to initial view and state
-      console.log("🔄 [GTM Reset] Resetting view and indices...");
+      console.log("🔄 [Messaging Reset] Resetting view and indices...");
       dispatch(setView("questions"));
       dispatch(setCurrentQuestionIndex(0));
       dispatch(setAnsweredIds([]));
       
       // Trigger fresh data fetch after a small delay
       setTimeout(() => {
-        console.log("🚀 [GTM Reset] Triggering fresh data fetch");
+        console.log("🚀 [Messaging Reset] Triggering fresh data fetch");
         dispatch(setShouldFetchUnanswered(true));
       }, 200);
       
-      console.log("✅ [GTM Reset] Re-initialization complete");
+      console.log("✅ [Messaging Reset] Re-initialization complete");
     }
   }, [resetTimestamp, isRehydrated, projectId, dispatch]);
 
   // Refetch unanswered questions when returning to questions view
   const refetchQuestionsOnReturn = useCallback(() => {
     if (isRefetchingQuestions.current) {
-      console.log("⏸️ [GTM Refetch] Already refetching, skipping");
+      console.log("⏸️ [Messaging Refetch] Already refetching, skipping");
       return;
     }
 
     console.log(
-      "🔄 [GTM Refetch] User returned to questions view - refetching unanswered questions"
+      "🔄 [Messaging Refetch] User returned to questions view - refetching unanswered questions"
     );
     isRefetchingQuestions.current = true;
 
@@ -308,7 +308,7 @@ const GTMPage: React.FC = () => {
     const handleVisibilityChange = () => {
       if (!document.hidden && view === "questions" && questions.length > 0) {
         console.log(
-          "👁️ [GTM Visibility] User returned to tab - refetching questions"
+          "👁️ [Messaging Visibility] User returned to tab - refetching questions"
         );
         refetchQuestionsOnReturn();
       }
@@ -330,7 +330,7 @@ const GTMPage: React.FC = () => {
 
       if (hasNavigatedBack) {
         console.log(
-          "🔄 [GTM Mount] Detected return to questions view - refetching"
+          "🔄 [Messaging Mount] Detected return to questions view - refetching"
         );
         refetchQuestionsOnReturn();
         initialMountFetchDone.current = true;
@@ -341,7 +341,7 @@ const GTMPage: React.FC = () => {
   // Cleanup state when unmounting
   useEffect(() => {
     return () => {
-      console.log("🧹 [GTM Unmount] Resetting fetch flag");
+      console.log("🧹 [Messaging Unmount] Resetting fetch flag");
       if (!isGenerating && !showDocumentPreview) {
         initialMountFetchDone.current = false;
         dispatch(setShouldFetchUnanswered(false));
@@ -366,7 +366,7 @@ const GTMPage: React.FC = () => {
       return;
     }
 
-    console.log("🚀 [GTM Mount] Running ONE-TIME mount fetch");
+    console.log("🚀 [Messaging Mount] Running ONE-TIME mount fetch");
     console.log(`  ├─ View: ${view}`);
     console.log(`  └─ Questions count: ${questions.length}`);
 
@@ -387,7 +387,7 @@ const GTMPage: React.FC = () => {
   // Force manual refetch when shouldFetchUnanswered changes
   useEffect(() => {
     if (shouldFetchUnanswered && projectId && isRehydrated) {
-      console.log("🔄 [GTM] Manually triggering unanswered questions refetch");
+      console.log("🔄 [Messaging] Manually triggering unanswered questions refetch");
       refetchUnanswered();
     }
   }, [shouldFetchUnanswered, projectId, refetchUnanswered, isRehydrated]);
@@ -395,7 +395,7 @@ const GTMPage: React.FC = () => {
   // Force manual refetch when shouldFetchAll changes
   useEffect(() => {
     if (shouldFetchAll && projectId && isRehydrated) {
-      console.log("🔄 [GTM] Manually triggering all questions refetch");
+      console.log("🔄 [Messaging] Manually triggering all questions refetch");
       refetchAllQuestions();
     }
   }, [shouldFetchAll, projectId, refetchAllQuestions, isRehydrated]);
@@ -404,7 +404,7 @@ const GTMPage: React.FC = () => {
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= questions.length) {
       console.log(
-        "⚠️ [GTM Safety] currentQuestionIndex out of bounds, resetting to 0"
+        "⚠️ [Messaging Safety] currentQuestionIndex out of bounds, resetting to 0"
       );
       dispatch(setCurrentQuestionIndex(0));
     }
@@ -430,13 +430,13 @@ const GTMPage: React.FC = () => {
         return;
       }
 
-      console.log("📥 [GTM] Downloading generated document...");
+      console.log("📥 [Messaging] Downloading generated document...");
       toast.loading("Downloading document...", { id: "download-doc" });
 
       const response = await getDocxFile({
         session_id: savedToken,
         project_id: project_id,
-        document_type: "gtm",
+        document_type: "messaging",
       }).unwrap();
 
       if (!response.docxBase64) {
@@ -446,16 +446,16 @@ const GTMPage: React.FC = () => {
       dispatch(
         setDocumentData({
           docxBase64: response.docxBase64,
-          fileName: response.fileName || "gtm_document.docx",
+          fileName: response.fileName || "messaging_document.docx",
         })
       );
 
       toast.dismiss("download-doc");
       toast.success("Document ready for preview!");
 
-      console.log("✅ [GTM] Document downloaded successfully");
+      console.log("✅ [Messaging] Document downloaded successfully");
     } catch (error: any) {
-      console.error("❌ [GTM Document] Download failed:", error);
+      console.error("❌ [Messaging Document] Download failed:", error);
       toast.dismiss("download-doc");
 
       let errorMessage = "Failed to download document. Please try again.";
@@ -530,7 +530,7 @@ const GTMPage: React.FC = () => {
   useEffect(() => {
     if (hasReceivedCompletionMessage && !showDocumentPreview && !docxBase64) {
       console.log(
-        "✅ [GTM] Generation complete - triggering document download"
+        "✅ [Messaging] Generation complete - triggering document download"
       );
       handleDocumentDownload();
     }
@@ -548,7 +548,7 @@ const GTMPage: React.FC = () => {
       generatingProgress === 100 &&
       !hasReceivedCompletionMessage
     ) {
-      console.log("⚠️ [GTM Safety] 100% reached, forcing completion");
+      console.log("⚠️ [Messaging Safety] 100% reached, forcing completion");
       setTimeout(() => {
         dispatch(setCompletionMessageReceived(true));
       }, 2000);
@@ -560,7 +560,7 @@ const GTMPage: React.FC = () => {
     if (!unansweredData) return;
 
     console.log(
-      "📥 [GTM API Response] Unanswered questions received:",
+      "📥 [Messaging API Response] Unanswered questions received:",
       unansweredData
     );
 
@@ -614,7 +614,7 @@ const GTMPage: React.FC = () => {
     if (!allQuestionsData || !allQuestionsData.questions) return;
 
     console.log(
-      "📥 [GTM API Response] All questions received:",
+      "📥 [Messaging API Response] All questions received:",
       allQuestionsData
     );
 
@@ -627,7 +627,7 @@ const GTMPage: React.FC = () => {
     );
 
     console.log(
-      `✅ [GTM] Loaded ${formattedQuestions.length} answered questions`
+      `✅ [Messaging] Loaded ${formattedQuestions.length} answered questions`
     );
     dispatch(setQuestions(formattedQuestions));
     dispatch(setView("preview"));
@@ -637,7 +637,7 @@ const GTMPage: React.FC = () => {
 
   // When transitioning to preview
   const handleShowPreview = useCallback(() => {
-    console.log("📋 [GTM Preview] Triggering API fetch for preview");
+    console.log("📋 [Messaging Preview] Triggering API fetch for preview");
     dispatch(setShouldFetchAll(true));
   }, [dispatch]);
 
@@ -705,7 +705,7 @@ const GTMPage: React.FC = () => {
   };
 
   const handleTypingComplete = useCallback(() => {
-    console.log('✅ [GTM] Typing animation complete');
+    console.log('✅ [Messaging] Typing animation complete');
     setIsTypingComplete(true);
   }, []);
 
@@ -742,7 +742,7 @@ const GTMPage: React.FC = () => {
         fileContent: base64Content,
         token: savedToken,
         project_id: project_id,
-        document_type: "gtm",
+        document_type: "messaging",
       };
 
       const uploadPromise = uploadTextFile(payload).unwrap();
@@ -758,7 +758,7 @@ const GTMPage: React.FC = () => {
 
       if (!baseWsUrl) {
         console.error(
-          "❌ [GTM] WebSocket URL not configured in environment variables"
+          "❌ [Messaging] WebSocket URL not configured in environment variables"
         );
         toast.error(
           "WebSocket configuration missing. Please contact support."
@@ -772,32 +772,32 @@ const GTMPage: React.FC = () => {
         "╔════════════════════════════════════════════════════════════╗"
       );
       console.log(
-        "║          🚀 STARTING GTM DOCUMENT GENERATION              ║"
+        "║          🚀 STARTING MESSAGING DOCUMENT GENERATION        ║"
       );
       console.log(
         "╚════════════════════════════════════════════════════════════╝"
       );
-      console.log("🔌 [GTM] Base WebSocket URL:", baseWsUrl);
-      console.log("🔌 [GTM] Full WebSocket URL:", websocketUrl);
+      console.log("🔌 [Messaging] Base WebSocket URL:", baseWsUrl);
+      console.log("🔌 [Messaging] Full WebSocket URL:", websocketUrl);
       console.log(
-        "🔑 [GTM] Session Token:",
+        "🔑 [Messaging] Session Token:",
         savedToken ? "✅ Present" : "❌ Missing"
       );
-      console.log("📦 [GTM] Project ID:", project_id);
-      console.log("📦 [GTM] Dispatching Redux actions...");
+      console.log("📦 [Messaging] Project ID:", project_id);
+      console.log("📦 [Messaging] Dispatching Redux actions...");
 
       dispatch(setWsUrl(websocketUrl));
-      console.log("✅ [GTM] wsUrl dispatched to Redux");
+      console.log("✅ [Messaging] wsUrl dispatched to Redux");
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       dispatch(setIsGenerating(true));
-      console.log("✅ [GTM] isGenerating=true dispatched to Redux");
+      console.log("✅ [Messaging] isGenerating=true dispatched to Redux");
       console.log(
-        "⏳ [GTM] Waiting for middleware to establish WebSocket connection..."
+        "⏳ [Messaging] Waiting for middleware to establish WebSocket connection..."
       );
     } catch (err: any) {
-      console.error("❌ [GTM Upload] Error:", err);
+      console.error("❌ [Messaging Upload] Error:", err);
       toast.error("Upload failed. Please try again.");
 
       dispatch(setIsGenerating(false));
@@ -859,7 +859,7 @@ const GTMPage: React.FC = () => {
         <DocumentPreview
           docxBase64={docxBase64}
           fileName={fileName}
-          documentType="gtm"
+          documentType="messaging"
         />
       </Box>
     );
@@ -909,7 +909,7 @@ const GTMPage: React.FC = () => {
             alignItems: "center",
           }}
         >
-          <Generating wsUrl={wsUrl} documentType="gtm" />
+          <Generating wsUrl={wsUrl} documentType="messaging" />
         </Box>
       ) : (
         <>
@@ -932,7 +932,7 @@ const GTMPage: React.FC = () => {
                       number={currentQuestion.id}
                       question={currentQuestion.question}
                       answer={currentQuestion.answer}
-                      documentType="gtm"
+                      documentType="messaging"
                       isLoading={isRefining}
                       onGenerate={handleGenerate}
                       onRegenerate={handleRegenerate}
@@ -1020,4 +1020,4 @@ const GTMPage: React.FC = () => {
   );
 };
 
-export default GTMPage;
+export default MessagingPage;
