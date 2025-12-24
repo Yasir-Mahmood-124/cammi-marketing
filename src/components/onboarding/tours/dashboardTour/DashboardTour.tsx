@@ -266,27 +266,15 @@ export const DashboardTourSteps: Step[] = [
             <Typography
               sx={{
                 fontSize: "22px",
-                fontWeight: 400,
-                color: "#252B42",
-                mb: 1.5,
+                fontWeight: 700,
+                fontStyle: "italic",
+                color: "#000000", // black shade you were using
                 lineHeight: 1.2,
                 textAlign: "left",
+                mb: 1.5,
               }}
             >
-              Hi, I'm{" "}
-              <Box
-                component="span"
-                sx={{
-                  background:
-                    "linear-gradient(90deg, #CA7BB9, #FC6198, #62B3FE)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  fontWeight: 700,
-                }}
-              >
-                Cammi.
-              </Box>
+              Hi, I'm Cammi.
             </Typography>
 
             <Typography
@@ -351,14 +339,14 @@ export const DashboardTourSteps: Step[] = [
                 fontSize: "12px",
                 fontWeight: 700,
                 lineHeight: 1.5,
-                background: "linear-gradient(90deg, #CA7BB9, #FC6198, #62B3FE)",
+                background: "#000000",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
                 textAlign: "left",
               }}
             >
-              Let's start by getting to know you a bit better. I have ten
+              Let's start by getting to know you a bit better. I have some
               questions then I could put together your go-to-market strategy
               together for you!
             </Typography>
@@ -428,7 +416,7 @@ export const DashboardTourSteps: Step[] = [
   {
     target: '[data-tour="sidebar-mobilize"]',
     content:
-      "Break your plan into quarterly chunks and define the key activities for each.",
+      "Put your plans into action!",
     placement: "right",
     disableBeacon: true,
     hideCloseButton: true,
@@ -458,7 +446,7 @@ export const DashboardTourSteps: Step[] = [
   // Step 7: Iterate
   {
     target: '[data-tour="sidebar-iterate"]',
-    content: "Coming Soon: Implement improvements.",
+    content: "Get advice and implement improvements",
     placement: "right",
     disableBeacon: true,
     hideCloseButton: true,

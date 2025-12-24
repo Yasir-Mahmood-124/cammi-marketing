@@ -32,7 +32,7 @@ const commonStepStyles = {
 export const FinalPreviewTourSteps: Step[] = [
   {
     target: '[data-tour="document-preview"]',
-    content: "Review all your questions and answers here before generating the document.",
+    content: "Here’s a starting point for your GTM. Read through it and see if it reflects your business.",
     placement: "right-start",
     disableBeacon: true,
     hideCloseButton: true,
@@ -56,7 +56,7 @@ export const FinalPreviewTourSteps: Step[] = [
 
   {
     target: '[data-tour="generate-document-button"]',
-    content: "Click here to generate and download your final document when you're ready.",
+    content: "If everything looks right, generate the document and continue.",
     placement: "top",
     disableBeacon: true,
     hideCloseButton: true,

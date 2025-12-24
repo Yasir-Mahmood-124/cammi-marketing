@@ -33,7 +33,7 @@ export const UserInputTourSteps: Step[] = [
   // Step 1: Question Asked
   {
     target: '[data-tour="question-box"]',
-    content: "Here you can see the question asked from you. Answer accurately for better results.",
+    content: "Tell me a bit about your business, and I’ll help shape the document as we go.",
     placement: "bottom",
     disableBeacon: true,
     hideCloseButton: true,
@@ -49,7 +49,7 @@ export const UserInputTourSteps: Step[] = [
   // Step 2: Question List
   {
     target: '[data-tour="question-list"]',
-    content: "Here you can see the list of question that are going to be asked from you.",
+    content: "All the questions are here. We’ll go through them together, one by one",
     placement: "left",
     disableBeacon: true,
     hideCloseButton: true,
@@ -65,13 +65,13 @@ export const UserInputTourSteps: Step[] = [
   // Step 3: Your Input
   {
     target: '[data-tour="user-input-field"]',
-    content: "Here you can give the answer of the question have been asked from you.",
+    content: "Type your response here. We’ll use it to move forward and build the document together.",
     placement: "top",
     disableBeacon: true,
     hideCloseButton: true,
     styles: commonStepStyles,
     data: {
-      title: "Your Input",
+      title: "Your turn",
       stepNumber: 3,
       totalSteps: 4,
       // ✅ ONLY THIS STEP has isPartialCompletion
@@ -85,7 +85,7 @@ export const UserInputTourSteps: Step[] = [
 // Step 4: Regenerate - THIS IS THE FINAL STEP
 export const UserInputRegenerateStep: Step = {
   target: '[data-tour="regenerate-button"]',
-  content: "Not happy? Regenerate. Want it cleaner? Refine. Easy.",
+  content: "If this doesn't feel right, you can regenerate to try a new version - or confirm to move forward with this one.",
   placement: "top",
   disableBeacon: true,
   hideCloseButton: true,
