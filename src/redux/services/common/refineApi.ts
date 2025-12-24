@@ -1,5 +1,6 @@
-//redux/services/common/refineApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// redux/services/common/refineApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 interface RefineRequest {
   prompt: string;
@@ -14,18 +15,13 @@ interface RefineResponse {
 
 export const refineApi = createApi({
   reducerPath: "refineApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://ogcvp659ah.execute-api.us-east-1.amazonaws.com/cammi-refine/",
-  }),
+  baseQuery: baseApiQuery, // use shared base query
   endpoints: (builder) => ({
     refine: builder.mutation<RefineResponse, RefineRequest>({
       query: (body) => ({
-        url: "refine", // if baseUrl already ends with /, no need to add it here
+        url: "/document-generation/user-input-enhancement", // endpoint relative to baseUrl
         method: "POST",
         body,
-        headers: {
-          "Content-Type": "application/json",
-        },
       }),
     }),
   }),

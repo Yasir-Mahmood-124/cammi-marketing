@@ -8,11 +8,15 @@ import { setDisplayedContent as setKmfDisplayedContent } from '@/redux/services/
 import { setDisplayedContent as setBsDisplayedContent } from '@/redux/services/bs/bsSlice';
 import { setDisplayedContent as setSrDisplayedContent } from '@/redux/services/sr/srSlice';
 import { setDisplayedContent as setGtmDisplayedContent } from '@/redux/services/gtm/gtmSlice';
+import { setDisplayedContent as setSmpDisplayedContent } from '@/redux/services/smp/smpSlice';
+import { setDisplayedContent as setMrDisplayedContent } from '@/redux/services/mr/mrSlice';
+import { setDisplayedContent as setMessagingDisplayedContent } from '@/redux/services/messaging/messagingSlice';
+import { setDisplayedContent as setBrandDisplayedContent } from '@/redux/services/brand/brandSlice';
 import { wsManager } from '@/redux/services/websocketManager';
 
 interface GeneratingProps {
   wsUrl: string;
-  documentType: 'icp' | 'kmf' | 'bs' | 'sr' | 'gtm';
+  documentType: 'icp' | 'kmf' | 'bs' | 'sr' | 'gtm' | 'smp' | 'mr' | 'messaging' | 'brand';
 }
 
 const Generating: React.FC<GeneratingProps> = ({ wsUrl, documentType }) => {
@@ -24,7 +28,11 @@ const Generating: React.FC<GeneratingProps> = ({ wsUrl, documentType }) => {
     if (documentType === 'kmf') return state.kmf;
     if (documentType === 'bs') return state.bs;
     if (documentType === 'sr') return state.sr;
-    return state.gtm;
+    if (documentType === 'gtm') return state.gtm;
+    if (documentType === 'smp') return state.smp;
+    if (documentType === 'mr') return state.mr;
+    if (documentType === 'messaging') return state.messaging;
+    return state.brand;
   });
   
   const { 
@@ -40,7 +48,11 @@ const Generating: React.FC<GeneratingProps> = ({ wsUrl, documentType }) => {
     documentType === 'kmf' ? setKmfDisplayedContent :
     documentType === 'bs' ? setBsDisplayedContent :
     documentType === 'sr' ? setSrDisplayedContent :
-    setGtmDisplayedContent;
+    documentType === 'gtm' ? setGtmDisplayedContent :
+    documentType === 'smp' ? setSmpDisplayedContent :
+    documentType === 'mr' ? setMrDisplayedContent :
+    documentType === 'messaging' ? setMessagingDisplayedContent :
+    setBrandDisplayedContent;
   
   // Local state for typing effect
   const [localDisplayedContent, setLocalDisplayedContent] = useState("");

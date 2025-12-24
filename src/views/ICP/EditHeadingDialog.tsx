@@ -14,10 +14,7 @@ import {
   CircularProgress,
   Box,
 } from "@mui/material";
-import {
-  unifiedHeadingData,
-  getDocumentTypeDisplayName,
-} from "./data";
+import { unifiedHeadingData, getDocumentTypeDisplayName } from "./data";
 
 interface UnifiedEditHeadingDialogProps {
   open: boolean;
@@ -66,6 +63,7 @@ const UnifiedEditHeadingDialog: React.FC<UnifiedEditHeadingDialogProps> = ({
     if (!mainHeading || !subHeading || !prompt) return;
 
     setLoading(true);
+
     try {
       // Get token from cookies
       const token =
@@ -77,16 +75,26 @@ const UnifiedEditHeadingDialog: React.FC<UnifiedEditHeadingDialogProps> = ({
 
       if (!token) throw new Error("Session ID not found in cookies");
 
-      // Get project ID from localStorage or props
+      // Get project ID
       const storedProject =
         typeof window !== "undefined"
           ? localStorage.getItem("currentProject")
           : null;
+
       const finalProjectId =
         projectId ||
         (storedProject ? JSON.parse(storedProject).project_id : "");
 
-      const wsUrl = `wss://ybkbmzlbbd.execute-api.us-east-1.amazonaws.com/prod/?session_id=${token}`;
+      // ✔ Use env WebSocket URL
+      const baseWsUrl = process.env.NEXT_PUBLIC_EDIT_HEADING_WEBSOCKET_URL;
+
+      if (!baseWsUrl) {
+        throw new Error("WebSocket URL not found in environment variables");
+      }
+
+      // Add query param
+      const wsUrl = `${baseWsUrl}?session_id=${token}`;
+
       const ws = new WebSocket(wsUrl);
       socketRef.current = ws;
 
@@ -107,6 +115,7 @@ const UnifiedEditHeadingDialog: React.FC<UnifiedEditHeadingDialogProps> = ({
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
+
           if (
             msg.action === "sendMessage" &&
             msg.body.trim() === "Document generated successfully!"

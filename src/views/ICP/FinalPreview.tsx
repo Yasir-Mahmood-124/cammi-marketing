@@ -44,6 +44,8 @@ const FinalPreview: React.FC<FinalPreviewProps> = ({
 
   return (
     <Box
+      // ✅ Added data-tour attribute for Final Preview Tour Step 1
+      data-tour="document-preview"
       sx={{
         width: "100%",
         maxWidth: {

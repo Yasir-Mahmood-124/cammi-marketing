@@ -41,17 +41,27 @@ import kmfReducer from "./services/kmf/kmfSlice";
 import bsReducer from "./services/bs/bsSlice";
 import srReducer from "./services/sr/srSlice";
 import gtmReducer from "./services/gtm/gtmSlice";
+import smpReducer from "./services/smp/smpSlice";
+import mrReducer from "./services/mr/mrSlice";
+import messagingReducer from "./services/messaging/messagingSlice";
+import brandReducer from "./services/brand/brandSlice";
 import { icpWebSocketMiddleware } from "./middleware/icpWebSocketMiddleware";
 import { kmfWebSocketMiddleware } from "./middleware/kmfWebSocketMiddleware";
 import { bsWebSocketMiddleware } from "./middleware/bsWebSocketMiddleware";
 import { srWebSocketMiddleware } from "./middleware/srWebSocketMiddleware";
 import { gtmWebSocketMiddleware } from "./middleware/gtmWebSocketMiddleware";
+import { smpWebSocketMiddleware } from "./middleware/smpWebSocketMiddleware";
+import { mrWebSocketMiddleware } from "./middleware/mrWebSocketMiddleware";
+import { messagingWebSocketMiddleware } from "./middleware/messagingWebSocketMiddleware";
+import { brandWebSocketMiddleware } from "./middleware/brandWebSocketMiddleware";
 import { getSpecificDocumentApi } from "./services/document/getSpecificDocument";
 import linkedinReducer from './services/linkedin/linkedinSlice';
 import { editDocumentNameApi } from "./services/document/editDocumentNameApi";
 import { deleteDocumentApi } from "./services/document/deleteDocumentApi";
 import { documentInfoApi } from "./services/document/documentInfoApi";
 import { getGtmDocumentApi } from "./services/document/getGtmDocument";
+import { onboardingStatusApi } from "./services/onboarding/onboadingStatus";
+
 
 // ==================== REDUX PERSIST CONFIGURATION ====================
 
@@ -161,7 +171,94 @@ const gtmPersistConfig = {
   ],
 };
 
-// ✅ ADD LINKEDIN PERSIST CONFIG
+const smpPersistConfig = {
+  key: 'smp',
+  storage,
+  whitelist: [
+    'projectId',
+    'sessionId',
+    'isGenerating',
+    'generatingProgress',
+    'generatingContent',
+    'displayedContent',
+    'hasReceivedCompletionMessage',
+    'generationComplete',
+    'docxBase64',
+    'fileName',
+    'showDocumentPreview',
+    'questions',
+    'answeredIds',
+    'currentQuestionIndex',
+    'view',
+  ],
+};
+
+const mrPersistConfig = {
+  key: 'mr',
+  storage,
+  whitelist: [
+    'projectId',
+    'sessionId',
+    'isGenerating',
+    'generatingProgress',
+    'generatingContent',
+    'displayedContent',
+    'hasReceivedCompletionMessage',
+    'generationComplete',
+    'docxBase64',
+    'fileName',
+    'showDocumentPreview',
+    'questions',
+    'answeredIds',
+    'currentQuestionIndex',
+    'view',
+  ],
+};
+
+const messagingPersistConfig = {
+  key: 'messaging',
+  storage,
+  whitelist: [
+    'projectId',
+    'sessionId',
+    'isGenerating',
+    'generatingProgress',
+    'generatingContent',
+    'displayedContent',
+    'hasReceivedCompletionMessage',
+    'generationComplete',
+    'docxBase64',
+    'fileName',
+    'showDocumentPreview',
+    'questions',
+    'answeredIds',
+    'currentQuestionIndex',
+    'view',
+  ],
+};
+
+const brandPersistConfig = {
+  key: 'brand',
+  storage,
+  whitelist: [
+    'projectId',
+    'sessionId',
+    'isGenerating',
+    'generatingProgress',
+    'generatingContent',
+    'displayedContent',
+    'hasReceivedCompletionMessage',
+    'generationComplete',
+    'docxBase64',
+    'fileName',
+    'showDocumentPreview',
+    'questions',
+    'answeredIds',
+    'currentQuestionIndex',
+    'view',
+  ],
+};
+
 const linkedinPersistConfig = {
   key: 'linkedin',
   storage,
@@ -181,7 +278,11 @@ const persistedKmfReducer = persistReducer(kmfPersistConfig, kmfReducer);
 const persistedBsReducer = persistReducer(bsPersistConfig, bsReducer);
 const persistedSrReducer = persistReducer(srPersistConfig, srReducer);
 const persistedGtmReducer = persistReducer(gtmPersistConfig, gtmReducer);
-const persistedLinkedinReducer = persistReducer(linkedinPersistConfig, linkedinReducer); // ✅ ADD THIS
+const persistedSmpReducer = persistReducer(smpPersistConfig, smpReducer);
+const persistedMrReducer = persistReducer(mrPersistConfig, mrReducer);
+const persistedMessagingReducer = persistReducer(messagingPersistConfig, messagingReducer);
+const persistedBrandReducer = persistReducer(brandPersistConfig, brandReducer);
+const persistedLinkedinReducer = persistReducer(linkedinPersistConfig, linkedinReducer);
 
 // ==================== ROOT REDUCER ====================
 
@@ -192,7 +293,10 @@ const rootReducer = combineReducers({
   bs: persistedBsReducer,
   sr: persistedSrReducer,
   gtm: persistedGtmReducer,
-
+  smp: persistedSmpReducer,
+  mr: persistedMrReducer,
+  messaging: persistedMessagingReducer,
+  brand: persistedBrandReducer,
   linkedin: persistedLinkedinReducer, 
 
   [authApi.reducerPath]: authApi.reducer,
@@ -231,6 +335,7 @@ const rootReducer = combineReducers({
   [deleteDocumentApi.reducerPath]: deleteDocumentApi.reducer,
   [documentInfoApi.reducerPath]: documentInfoApi.reducer,
   [getGtmDocumentApi.reducerPath]: getGtmDocumentApi.reducer,
+  [onboardingStatusApi.reducerPath]: onboardingStatusApi.reducer,
 });
 
 // ==================== STORE CONFIGURATION ====================
@@ -248,6 +353,10 @@ export const store = configureStore({
       .concat(bsWebSocketMiddleware)
       .concat(srWebSocketMiddleware)
       .concat(gtmWebSocketMiddleware)
+      .concat(smpWebSocketMiddleware)
+      .concat(mrWebSocketMiddleware)
+      .concat(messagingWebSocketMiddleware)
+      .concat(brandWebSocketMiddleware)
       .concat(authApi.middleware)
       .concat(onboardingApi.middleware)
       .concat(googleApi.middleware)
@@ -283,7 +392,8 @@ export const store = configureStore({
       .concat(editDocumentNameApi.middleware)
       .concat(deleteDocumentApi.middleware)
       .concat(documentInfoApi.middleware)
-      .concat(getGtmDocumentApi.middleware),
+      .concat(getGtmDocumentApi.middleware)
+      .concat(onboardingStatusApi.middleware),
 });
 
 export const persistor = persistStore(store);

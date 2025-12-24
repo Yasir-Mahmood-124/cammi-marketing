@@ -38,6 +38,9 @@ import {
 } from "@/redux/services/sr/srSlice";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
+import { useUserInputTour } from "@/components/onboarding/tours/userInputTour/useUserInputTour";
+import { useFinalPreviewTour } from "@/components/onboarding/tours/finalPreviewTour/useFinalPreviewTour";
+import { useDocumentPreviewTour } from "@/components/onboarding/tours/documentPreview/useDocumentPreviewTour";
 
 interface Question {
   id: number;
@@ -58,9 +61,11 @@ const SRPage: React.FC = () => {
   const mountRecoveryTriggered = useRef(false);
   const hasCheckedForRefetch = useRef(false);
   const refetchTimestamp = useRef(Date.now());
-  
-  // 🔥 NEW: Track if upload was interrupted
+
   const [wasUploadInterrupted, setWasUploadInterrupted] = useState(false);
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
+  const [isFinalPreviewReady, setIsFinalPreviewReady] = useState(false);
+  const [isDocumentPreviewReady, setIsDocumentPreviewReady] = useState(false);
 
   // Get state from Redux
   const {
@@ -87,22 +92,105 @@ const SRPage: React.FC = () => {
     useUploadTextFileMutation();
   const [getDocxFile, { isLoading: isDownloading }] = useGetDocxFileMutation();
 
-  // 🔥 NEW: Handle interrupted upload on mount
+  const uploadWebSocketUrl = process.env.NEXT_PUBLIC_UPLOAD_WEBSOCKET_URL as string;
+  const realtimeWebSocketUrl = process.env.NEXT_PUBLIC_REALTIME_WEBSOCKET_URL as string;
+
+  // Get current question and check if it has an answer
+  const currentQuestion = questions[currentQuestionIndex];
+  const hasAnswer = !!(
+    currentQuestion?.answer && currentQuestion.answer.trim() !== ""
+  );
+
+  // Check if components are actually rendered and ready
+  const componentsReady =
+    view === "questions" &&
+    questions.length > 0 &&
+    currentQuestion !== undefined &&
+    !isGenerating &&
+    !showDocumentPreview;
+
+  const readyForRegenerateStep = hasAnswer && isTypingComplete;
+
+  console.log("🎯 [SR Page] Tour conditions:", {
+    view,
+    questionsLength: questions.length,
+    hasCurrentQuestion: !!currentQuestion,
+    isGenerating,
+    showDocumentPreview,
+    componentsReady,
+    hasAnswer,
+    isTypingComplete,
+    readyForRegenerateStep,
+  });
+
+  // Tour hooks
+  useUserInputTour(componentsReady, readyForRegenerateStep);
+  useFinalPreviewTour({ isReady: isFinalPreviewReady });
+  useDocumentPreviewTour({ isReady: isDocumentPreviewReady });
+
+  // Set Final Preview ready when view changes to preview
   useEffect(() => {
-    // Check if upload was interrupted
+    if (view === "preview" && questions.length > 0 && !isGenerating) {
+      console.log("✅ [Final Preview] Setting ready state after delay");
+      const timer = setTimeout(() => {
+        setIsFinalPreviewReady(true);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsFinalPreviewReady(false);
+    }
+  }, [view, questions.length, isGenerating]);
+
+  // Set Document Preview ready when document is shown
+  useEffect(() => {
+    if (showDocumentPreview && docxBase64) {
+      console.log("✅ [Document Preview] Setting ready state after delay");
+      const timer = setTimeout(() => {
+        setIsDocumentPreviewReady(true);
+      }, 800);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsDocumentPreviewReady(false);
+    }
+  }, [showDocumentPreview, docxBase64]);
+
+  // Reset typing state when answer changes or question changes
+  useEffect(() => {
+    console.log('🔄 [SR] Answer changed, resetting typing state');
+    setIsTypingComplete(false);
+  }, [currentQuestion?.answer, currentQuestionIndex]);
+
+  // Debug logging for tour conditions
+  useEffect(() => {
+    console.log('🎯 [SR Tour Debug]', {
+      hasAnswer,
+      isTypingComplete,
+      readyForRegenerateStep,
+      regenerateButtonExists: !!document.querySelector('[data-tour="regenerate-button"]'),
+      userInputStatus: (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          return user.user_input_status;
+        } catch {
+          return 'error';
+        }
+      })()
+    });
+  }, [hasAnswer, isTypingComplete, readyForRegenerateStep]);
+
+  // Handle interrupted upload on mount
+  useEffect(() => {
     if (wasUploadInterrupted) {
       console.log("⚠️ [SR] Upload was interrupted - showing message");
-      
-      // Show interruption message
       toast.error(
         "Document analysis was interrupted due to page navigation or refresh. Please upload again.",
         { duration: 5000 }
       );
-      
-      // Reset the flag
       setWasUploadInterrupted(false);
     }
-  }, []); // Run only on mount
+  }, []);
 
   // Get project_id from localStorage on component mount
   useEffect(() => {
@@ -119,22 +207,19 @@ const SRPage: React.FC = () => {
     }
   }, [dispatch, projectId]);
 
-  // 🔥 FIXED: Setup WebSocket URL for upload - reset when view changes to upload or initial
+  // Setup WebSocket URL for upload
   useEffect(() => {
-    // Set upload WebSocket URL when on initial or upload view
     if (view === "initial" || view === "upload") {
-      const uploadWebSocketUrl =
-        "wss://91vm5ilj37.execute-api.us-east-1.amazonaws.com/dev";
-
-      // Only update if it's currently set to generation URL
-      if (!wsUrl || wsUrl.includes("4iqvtvmxle")) {
-        console.log("🔗 [SR] Setting upload WebSocket URL");
+      const isNotUploadUrl = wsUrl && !wsUrl.startsWith(uploadWebSocketUrl);
+      
+      if (!wsUrl || isNotUploadUrl) {
+        console.log("🔗 [SR] Setting upload WebSocket URL from ENV");
         dispatch(setWsUrl(uploadWebSocketUrl));
       }
     }
-  }, [view, wsUrl, dispatch]);
+  }, [view, wsUrl, dispatch, uploadWebSocketUrl]);
 
-  // 🔥 RTK Query for unanswered questions
+  // RTK Query for unanswered questions
   const {
     data: unansweredData,
     isLoading: isLoadingUnanswered,
@@ -151,7 +236,7 @@ const SRPage: React.FC = () => {
     }
   );
 
-  // 🔥 RTK Query for all questions (answered)
+  // RTK Query for all questions (answered)
   const {
     data: allQuestionsData,
     isLoading: isLoadingAll,
@@ -168,18 +253,15 @@ const SRPage: React.FC = () => {
     }
   );
 
-  // 🔥 Cleanup state when unmounting
+  // Cleanup state when unmounting
   useEffect(() => {
     return () => {
       console.log("🧹 [SR Unmount] Cleaning up for fresh fetch on return");
 
-      // 🔥 NEW: Dismiss analyzing toast immediately when leaving page
       toast.dismiss("analyzing-doc");
       console.log("🧹 [SR Unmount] Dismissed analyzing toast");
 
-      // Only clear if not generating or showing document
       if (!isGenerating && !showDocumentPreview) {
-        // If user was on questions view, prepare for refetch
         if (view === "questions" && questions.length > 0) {
           console.log(
             "📋 [SR Unmount] Was on questions - will refetch on return"
@@ -192,7 +274,6 @@ const SRPage: React.FC = () => {
           refetchTimestamp.current = Date.now();
         }
 
-        // If user was on preview, mark for refetch but DON'T clear view
         if (view === "preview" && questions.length > 0) {
           console.log(
             "📋 [SR Unmount] Was on preview - will refetch on return"
@@ -206,18 +287,14 @@ const SRPage: React.FC = () => {
     };
   }, [dispatch, isGenerating, showDocumentPreview, view, questions.length]);
 
-  // 🔥 On mount, check if we need to refetch questions
+  // On mount, check if we need to refetch questions
   useEffect(() => {
-    // Prevent duplicate checks on the same mount
     if (hasCheckedForRefetch.current) {
       return;
     }
 
-    // Only refetch if we have a projectId and not in a critical state
     if (projectId && !isGenerating && !showDocumentPreview) {
-      // Only auto-trigger if NOT on initial view
       if (view === "questions" && questions.length === 0) {
-        // User is on questions view but no questions - fetch them
         console.log(
           "📋 [SR Mount] On questions view - fetching unanswered questions"
         );
@@ -228,7 +305,6 @@ const SRPage: React.FC = () => {
           dispatch(setShouldFetchUnanswered(true));
         }, 100);
       } else if (view === "preview" && questions.length === 0) {
-        // User is on preview but no questions - fetch all answered
         console.log(
           "📋 [SR Mount] On preview view - fetching all answered questions"
         );
@@ -239,7 +315,6 @@ const SRPage: React.FC = () => {
           dispatch(setShouldFetchAll(true));
         }, 100);
       }
-      // DO NOT auto-fetch if view is "initial" - let user click Yes/No
     }
   }, [
     projectId,
@@ -250,7 +325,7 @@ const SRPage: React.FC = () => {
     questions.length,
   ]);
 
-  // 🔥 Safety check - Reset currentQuestionIndex if out of bounds
+  // Safety check - Reset currentQuestionIndex if out of bounds
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= questions.length) {
       console.log(
@@ -295,7 +370,7 @@ const SRPage: React.FC = () => {
     }
   }, [dispatch, getDocxFile]);
 
-  // ==================== MOUNT RECOVERY WITH WEBSOCKET RE-CONNECTION (ENHANCED) ====================
+  // Mount recovery
   useEffect(() => {
     if (mountRecoveryTriggered.current) {
       console.log(
@@ -383,7 +458,7 @@ const SRPage: React.FC = () => {
     handleGenerationComplete,
   ]);
 
-  // Watch for completion message flag changes (backup)
+  // Watch for completion message flag changes
   useEffect(() => {
     if (
       hasReceivedCompletionMessage &&
@@ -394,7 +469,7 @@ const SRPage: React.FC = () => {
     }
   }, [hasReceivedCompletionMessage, docxBase64, handleGenerationComplete]);
 
-  // 🔥 FIXED: Handle unanswered questions response
+  // Handle unanswered questions response
   useEffect(() => {
     if (unansweredData) {
       console.log(
@@ -424,7 +499,6 @@ const SRPage: React.FC = () => {
           `${formattedQuestions.length} unanswered question(s) found. Please provide answers.`
         );
       } else {
-        // 🔥 FIXED: No toast here - just silently fetch all answered questions
         console.log(
           "✅ [SR] No unanswered questions, fetching all answered questions"
         );
@@ -434,7 +508,7 @@ const SRPage: React.FC = () => {
     }
   }, [unansweredData, dispatch]);
 
-  // 🔥 FIXED: Handle all questions (answered) response
+  // Handle all questions (answered) response
   useEffect(() => {
     if (allQuestionsData && allQuestionsData.questions) {
       console.log(
@@ -457,7 +531,6 @@ const SRPage: React.FC = () => {
       dispatch(setView("preview"));
       dispatch(setShouldFetchAll(false));
 
-      // 🔥 FIXED: Only show toast if we have questions (meaningful result)
       if (formattedQuestions.length > 0) {
         toast.success("Processing complete! Preview ready.");
       }
@@ -470,10 +543,6 @@ const SRPage: React.FC = () => {
 
   const handleYesClick = () => {
     console.log("📤 [SR] User clicked Yes - preparing upload view");
-
-    // 🔥 FIXED: Ensure upload WebSocket URL is set
-    const uploadWebSocketUrl =
-      "wss://91vm5ilj37.execute-api.us-east-1.amazonaws.com/dev";
     dispatch(setWsUrl(uploadWebSocketUrl));
     dispatch(setView("upload"));
   };
@@ -487,26 +556,25 @@ const SRPage: React.FC = () => {
     dispatch(setShouldFetchUnanswered(true));
   };
 
-  // 🔥 NEW: Handle upload interruption
   const handleUploadInterrupted = () => {
     console.log("⚠️ [SR] Upload interrupted - setting flag");
     setWasUploadInterrupted(true);
   };
 
-  // 🔥 FIXED: Handle upload complete with proper toast management
   const handleUploadComplete = (data: any) => {
     if (data.status === "processing_started") {
       return;
     }
 
     if (data.status === "analyzing_document") {
-      // 🔥 FIXED: Use toast.loading with unique ID to prevent duplicates
-      toast.loading("Analyzing your document...", { id: "analyzing-doc", duration: Infinity });
+      toast.loading("Analyzing your document...", {
+        id: "analyzing-doc",
+        duration: Infinity,
+      });
       return;
     }
 
     if (data.status === "questions_need_answers" && data.not_found_questions) {
-      // 🔥 Dismiss analyzing toast
       toast.dismiss("analyzing-doc");
 
       const formattedQuestions: Question[] = data.not_found_questions.map(
@@ -530,7 +598,6 @@ const SRPage: React.FC = () => {
     }
 
     if (data.status === "processing_complete") {
-      // 🔥 Dismiss analyzing toast
       toast.dismiss("analyzing-doc");
 
       if (data.results) {
@@ -547,14 +614,12 @@ const SRPage: React.FC = () => {
           dispatch(setView("questions"));
           toast.success("Some questions need answers. Please review them.");
         } else {
-          // 🔥 FIXED: Don't show toast here - let the effect handle it
           console.log("📋 [SR] All questions answered - fetching for preview");
           dispatch(setQuestions([]));
           refetchTimestamp.current = Date.now();
           dispatch(setShouldFetchAll(true));
         }
       } else {
-        // 🔥 FIXED: Don't show toast here - let the effect handle it
         console.log("📋 [SR] Processing complete - fetching for preview");
         dispatch(setQuestions([]));
         refetchTimestamp.current = Date.now();
@@ -615,6 +680,11 @@ const SRPage: React.FC = () => {
     dispatch(updateQuestionAnswer({ id, answer: newAnswer }));
   };
 
+  const handleTypingComplete = useCallback(() => {
+    console.log('✅ [SR] Typing animation complete');
+    setIsTypingComplete(true);
+  }, []);
+
   const handleGenerateDocument = async () => {
     try {
       documentFetchTriggered.current = false;
@@ -622,9 +692,20 @@ const SRPage: React.FC = () => {
 
       const dynamicFileName = "businessidea.txt";
       const savedToken = Cookies.get("token");
+
+      if (!savedToken) {
+        toast.error("Session expired. Please log in again.");
+        return;
+      }
+
       const project_id = JSON.parse(
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
+
+      if (!project_id) {
+        toast.error("Project ID not found. Please select a project.");
+        return;
+      }
 
       const textContent = questions
         .map((q) => `Q: ${q.question}\nA: ${q.answer}`)
@@ -649,19 +730,48 @@ const SRPage: React.FC = () => {
         error: "Failed to upload answers. Please try again.",
       });
 
-      const websocketUrl = `wss://4iqvtvmxle.execute-api.us-east-1.amazonaws.com/prod/?session_id=${savedToken}`;
+      const savedTokenForWs = Cookies.get("token");
+      const websocketUrl = `${realtimeWebSocketUrl}?session_id=${savedTokenForWs}`;
+
+      console.log(
+        "╔════════════════════════════════════════════════════════════╗"
+      );
+      console.log(
+        "║          🚀 STARTING SR DOCUMENT GENERATION               ║"
+      );
+      console.log(
+        "╚════════════════════════════════════════════════════════════╝"
+      );
+      console.log("🔌 [SR] Base WebSocket URL:", realtimeWebSocketUrl);
+      console.log("🔌 [SR] Full WebSocket URL:", websocketUrl);
+      console.log(
+        "🔑 [SR] Session Token:",
+        savedTokenForWs ? "✅ Present" : "❌ Missing"
+      );
+      console.log("📦 [SR] Project ID:", project_id);
+      console.log("📦 [SR] Dispatching Redux actions...");
 
       dispatch(setWsUrl(websocketUrl));
+      console.log("✅ [SR] wsUrl dispatched to Redux");
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       dispatch(setIsGenerating(true));
+      console.log("✅ [SR] isGenerating=true dispatched to Redux");
+      console.log(
+        "⏳ [SR] Waiting for middleware to establish WebSocket connection..."
+      );
     } catch (err: any) {
       console.error("❌ [SR Upload] Error:", err);
       toast.error("Upload failed. Please try again.");
+
+      dispatch(setIsGenerating(false));
+      dispatch(setWsUrl(""));
     }
   };
 
   const isLoading = isLoadingUnanswered || isLoadingAll;
   const isError = isErrorUnanswered || isErrorAll;
-  // const showButton = view === "questions" || view === "preview";
   const showButton = view === "preview";
 
   if (isError) {
@@ -683,8 +793,15 @@ const SRPage: React.FC = () => {
   }
 
   if (showDocumentPreview && docxBase64) {
+    console.log('🎯 [Document Preview] Rendering with tour ready:', isDocumentPreviewReady);
     return (
-      <Box sx={{ height: 'calc(100vh - 10.96vh)', width: '100%', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          height: "calc(100vh - 10.96vh)",
+          width: "100%",
+          overflow: "hidden",
+        }}
+      >
         <DocumentPreview
           docxBase64={docxBase64}
           fileName={fileName}
@@ -757,6 +874,7 @@ const SRPage: React.FC = () => {
                     onGenerate={handleGenerate}
                     onRegenerate={handleRegenerate}
                     onConfirm={handleConfirm}
+                    onTypingComplete={handleTypingComplete}
                   />
                 </Box>
 
@@ -773,7 +891,6 @@ const SRPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Show loading state while fetching preview data */}
           {view === "preview" && questions.length === 0 && isLoadingAll && (
             <Box
               sx={{
@@ -789,7 +906,6 @@ const SRPage: React.FC = () => {
             </Box>
           )}
 
-          {/* Only show preview when we have questions from API */}
           {view === "preview" && questions.length > 0 && (
             <Box
               sx={{
@@ -800,7 +916,7 @@ const SRPage: React.FC = () => {
                 paddingLeft: "20px",
               }}
             >
-              <Box sx={{ width: "100%", }}>
+              <Box sx={{ width: "100%" }}>
                 {questions.some((q) => q.answer === "") && (
                   <Button
                     onClick={handleBackToQuestions}
@@ -829,8 +945,9 @@ const SRPage: React.FC = () => {
           )}
 
           {showButton && (
-            <Box sx={{ position: "fixed", bottom: "35px", right: "70px" }}>
+            <Box sx={{ position: "fixed", bottom: "20px", right: "70px" }}>
               <Button
+                data-tour="generate-document-button"
                 variant="contained"
                 endIcon={<ArrowForwardIcon sx={{ fontSize: "14px" }} />}
                 onClick={handleGenerateDocument}

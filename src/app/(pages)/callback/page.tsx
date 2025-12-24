@@ -13,9 +13,21 @@ const GoogleCallbackPage = () => {
     const session_id = params.get("session_id");
     const id = params.get("id");
 
-    
-
     const onboarding_status = params.get("onboarding_status") === "true";
+
+    // ✅ FIXED: Extract status fields from URL
+    const dashboard_status = params.get("dashboard_status");
+    const user_input_status = params.get("user_input_status");
+    const final_preview_status = params.get("final_preview_status");
+    const document_preview_status = params.get("document_preview_status");
+
+    // 🐛 DEBUG: Log what we extracted
+    console.log("🔍 [CALLBACK] Extracted status fields:", {
+      dashboard_status,
+      user_input_status,
+      final_preview_status,
+      document_preview_status
+    });
 
     const user = {
       name: params.get("name"),
@@ -28,7 +40,15 @@ const GoogleCallbackPage = () => {
       access_token: params.get("access_token"),
       expiry: params.get("expiry"),
       id,
+      // ✅ CRITICAL: Add status fields to user object
+      dashboard_status: dashboard_status === "True" || dashboard_status === "true",
+      user_input_status: user_input_status === "True" || user_input_status === "true",
+      final_preview_status: final_preview_status === "True" || final_preview_status === "true",
+      document_preview_status: document_preview_status === "True" || document_preview_status === "true",
     };
+
+    // 🐛 DEBUG: Log what we're saving
+    console.log("💾 [CALLBACK] Saving user object:", user);
 
     if (token && user.email) {
       Cookies.set("token", session_id ?? "", { expires: 7 });
@@ -39,6 +59,10 @@ const GoogleCallbackPage = () => {
         "onboarding_status",
         JSON.stringify(onboarding_status)
       );
+
+      // 🐛 DEBUG: Verify what was saved
+      const savedUser = localStorage.getItem("user");
+      console.log("✅ [CALLBACK] Verified localStorage:", JSON.parse(savedUser || "{}"));
 
       router.replace(onboarding_status ? "/onboarding" : "/dashboard");
     } else {

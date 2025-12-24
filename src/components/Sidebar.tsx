@@ -13,20 +13,10 @@ import {
 } from "@mui/material";
 import {
   ChevronRight as ChevronRightIcon,
-  Dashboard as DashboardIcon,
-  Lightbulb as LightbulbIcon,
-  Straighten as StraightenIcon,
-  PhoneIphone as PhoneIphoneIcon,
-  Monitor as MonitorIcon,
-  Repeat as RepeatIcon,
-  Calculate as CalculateIcon,
-  Schedule as ScheduleIcon,
   ExpandMore as ExpandMoreIcon,
-  // Feedback as FeedbackIcon,
 } from "@mui/icons-material";
 
 import {
-  BS,
   Clarify,
   Dashboard,
   Align,
@@ -72,7 +62,6 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 20,
             height: 20,
-            mr: 1.5,
             "& path": {
               fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
             },
@@ -95,9 +84,8 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 20,
             height: 20,
-            mr: 1.5,
             "& path": {
-              fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
+              fill: selectedItem === "Align" ? "#FFFFFF" : "#000000",
             },
           }}
         />
@@ -117,9 +105,8 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 20,
             height: 20,
-            mr: 1.5,
             "& path": {
-              fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
+              fill: selectedItem === "Mobilize" ? "#FFFFFF" : "#000000",
             },
           }}
         />
@@ -142,9 +129,8 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 20,
             height: 20,
-            mr: 1.5,
             "& path": {
-              fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
+              fill: selectedItem === "Monitor" ? "#FFFFFF" : "#000000",
             },
           }}
         />
@@ -159,9 +145,8 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 20,
             height: 20,
-            mr: 1.5,
             "& path": {
-              fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
+              fill: selectedItem === "Iterate" ? "#FFFFFF" : "#000000",
             },
           }}
         />
@@ -179,9 +164,8 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 23,
             height: 23,
-            mr: 1,
             "& path": {
-              fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
+              fill: selectedItem === "Brand Setup" ? "#FFFFFF" : "#000000",
             },
           }}
         />
@@ -195,9 +179,8 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 20,
             height: 20,
-            mr: 1.5,
             "& path": {
-              fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
+              fill: selectedItem === "Lead Calculator" ? "#FFFFFF" : "#000000",
             },
           }}
         />
@@ -211,9 +194,8 @@ const Sidebar: React.FC = () => {
           sx={{
             width: 23,
             height: 23,
-            mr: 1,
             "& path": {
-              fill: selectedItem === "Clarify" ? "#FFFFFF" : "#000000",
+              fill: selectedItem === "Scheduler" ? "#FFFFFF" : "#000000",
             },
           }}
         />
@@ -241,32 +223,18 @@ const Sidebar: React.FC = () => {
       <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
         {/* Logo */}
         <Box sx={{ px: 3, pt: 1.5, pb: 0.8 }}>
-          {/* <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: "#000",
-              fontSize: "20px",
-              fontFamily: "sans-serif",
-            }}
-          >
-            cammi
-          </Typography> */}
-
           <Box
-          component={Logo}
-          alt="Cammi Logo"
-          sx={{
-            height: 50, // adjust based on your logo’s aspect ratio
-            width: "auto",
-            display: "flex",
-            alignItems: "center",
-            color: "#000", // if your SVG uses fill="currentColor"
-          }}
-        />
+            component={Logo}
+            alt="Cammi Logo"
+            sx={{
+              height: 50,
+              width: "auto",
+              display: "flex",
+              alignItems: "center",
+              color: "#000",
+            }}
+          />
         </Box>
-
-
 
         {/* Scrollable Content Area */}
         <Box
@@ -289,7 +257,7 @@ const Sidebar: React.FC = () => {
             },
           }}
         >
-          {/* Main Menu */}
+          {/* Main Menu - Dashboard */}
           <List sx={{ px: 2, pt: 0, pb: 0 }}>
             <ListItem disablePadding>
               <ListItemButton
@@ -321,27 +289,37 @@ const Sidebar: React.FC = () => {
                       : {},
                 }}
               >
-
                 <Box
-                  component={Dashboard}
+                  data-tour="sidebar-dashboard"
                   sx={{
-                    fontSize: 20,
-                    mr: 1.5,
-                    color: selectedItem === "Dashboard" ? "#FFFFFF" : "#000000",
-                    "& path": {
-                      fill:
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  <Box
+                    component={Dashboard}
+                    sx={{
+                      fontSize: 20,
+                      mr: 1.5,
+                      color:
                         selectedItem === "Dashboard" ? "#FFFFFF" : "#000000",
-                    }, // color fix for SVG path
-                  }}
-                />
-                <ListItemText
-                  primary="Dashboard"
-                  primaryTypographyProps={{
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: selectedItem === "Dashboard" ? "#FFFFFF" : "#000000",
-                  }}
-                />
+                      "& path": {
+                        fill:
+                          selectedItem === "Dashboard" ? "#FFFFFF" : "#000000",
+                      },
+                    }}
+                  />
+                  <ListItemText
+                    primary="Dashboard"
+                    primaryTypographyProps={{
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color:
+                        selectedItem === "Dashboard" ? "#FFFFFF" : "#000000",
+                    }}
+                  />
+                </Box>
               </ListItemButton>
             </ListItem>
           </List>
@@ -399,59 +377,68 @@ const Sidebar: React.FC = () => {
                       }}
                     >
                       <Box
+                        data-tour={`sidebar-${item.text.toLowerCase()}`}
                         sx={{
-                          mr: 1.5,
                           display: "flex",
                           alignItems: "center",
-                          "& svg path": {
-                            fill:
-                              selectedItem === item.text && !item.subItems
-                                ? "#FFFFFF"
-                                : selectedItem === item.text ||
-                                  selectedParent === item.text
-                                ? "#3EA3FF"
-                                : "#000000",
-                          },
+                          width: "100%",
                         }}
                       >
-                        {item.icon}
-                      </Box>
+                        <Box
+                          sx={{
+                            mr: 1.5,
+                            display: "flex",
+                            alignItems: "center",
+                            "& svg path": {
+                              fill:
+                                selectedItem === item.text && !item.subItems
+                                  ? "#FFFFFF"
+                                  : selectedItem === item.text ||
+                                    selectedParent === item.text
+                                  ? "#3EA3FF"
+                                  : "#000000",
+                            },
+                          }}
+                        >
+                          {item.icon}
+                        </Box>
 
-                      <ListItemText
-                        primary={item.text}
-                        primaryTypographyProps={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color:
-                            selectedItem === item.text ||
-                            selectedParent === item.text
-                              ? "#3EA3FF"
-                              : "#000000",
-                        }}
-                      />
-                      {openMenus[item.text] ? (
-                        <ExpandMoreIcon
-                          sx={{
-                            fontSize: 18,
+                        <ListItemText
+                          primary={item.text}
+                          primaryTypographyProps={{
+                            fontSize: "14px",
+                            fontWeight: 500,
                             color:
                               selectedItem === item.text ||
                               selectedParent === item.text
                                 ? "#3EA3FF"
-                                : "#757575",
+                                : "#000000",
                           }}
                         />
-                      ) : (
-                        <ChevronRightIcon
-                          sx={{
-                            fontSize: 18,
-                            color:
-                              selectedItem === item.text ||
-                              selectedParent === item.text
-                                ? "#3EA3FF"
-                                : "#757575",
-                          }}
-                        />
-                      )}
+                        {openMenus[item.text] ? (
+                          <ExpandMoreIcon
+                            sx={{
+                              fontSize: 18,
+                              color:
+                                selectedItem === item.text ||
+                                selectedParent === item.text
+                                  ? "#3EA3FF"
+                                  : "#757575",
+                            }}
+                          />
+                        ) : (
+                          <ChevronRightIcon
+                            sx={{
+                              fontSize: 18,
+                              color:
+                                selectedItem === item.text ||
+                                selectedParent === item.text
+                                  ? "#3EA3FF"
+                                  : "#757575",
+                            }}
+                          />
+                        )}
+                      </Box>
                     </ListItemButton>
                   </ListItem>
                   <Collapse
@@ -586,61 +573,72 @@ const Sidebar: React.FC = () => {
                       }}
                     >
                       <Box
+                        data-tour={`sidebar-${item.text
+                          .toLowerCase()
+                          .replace(/\s+/g, "-")}`}
                         sx={{
-                          mr: 1.5,
                           display: "flex",
                           alignItems: "center",
-                          "& svg path": {
-                            fill:
+                          width: "100%",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            mr: 1.5,
+                            display: "flex",
+                            alignItems: "center",
+                            "& svg path": {
+                              fill:
+                                selectedItem === item.text && !item.subItems
+                                  ? "#FFFFFF"
+                                  : selectedItem === item.text ||
+                                    selectedParent === item.text
+                                  ? "#3EA3FF"
+                                  : "#000000",
+                            },
+                          }}
+                        >
+                          {item.icon}
+                        </Box>
+                        <ListItemText
+                          primary={item.text}
+                          primaryTypographyProps={{
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color:
                               selectedItem === item.text && !item.subItems
                                 ? "#FFFFFF"
                                 : selectedItem === item.text ||
                                   selectedParent === item.text
                                 ? "#3EA3FF"
                                 : "#000000",
-                          },
-                        }}
-                      >
-                        {item.icon}
+                          }}
+                        />
+                        {item.subItems &&
+                          (openMenus[item.text] ? (
+                            <ExpandMoreIcon
+                              sx={{
+                                fontSize: 18,
+                                color:
+                                  selectedItem === item.text ||
+                                  selectedParent === item.text
+                                    ? "#3EA3FF"
+                                    : "#757575",
+                              }}
+                            />
+                          ) : (
+                            <ChevronRightIcon
+                              sx={{
+                                fontSize: 18,
+                                color:
+                                  selectedItem === item.text ||
+                                  selectedParent === item.text
+                                    ? "#3EA3FF"
+                                    : "#757575",
+                              }}
+                            />
+                          ))}
                       </Box>
-                      <ListItemText
-                        primary={item.text}
-                        primaryTypographyProps={{
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color:
-                            selectedItem === item.text && !item.subItems
-                              ? "#FFFFFF"
-                              : selectedItem === item.text ||
-                                selectedParent === item.text
-                              ? "#3EA3FF"
-                              : "#000000",
-                        }}
-                      />
-                      {item.subItems &&
-                        (openMenus[item.text] ? (
-                          <ExpandMoreIcon
-                            sx={{
-                              fontSize: 18,
-                              color:
-                                selectedItem === item.text ||
-                                selectedParent === item.text
-                                  ? "#3EA3FF"
-                                  : "#757575",
-                            }}
-                          />
-                        ) : (
-                          <ChevronRightIcon
-                            sx={{
-                              fontSize: 18,
-                              color:
-                                selectedItem === item.text ||
-                                selectedParent === item.text
-                                  ? "#3EA3FF"
-                                  : "#757575",
-                            }}
-                          />
-                        ))}
                     </ListItemButton>
                   </ListItem>
                   {item.subItems && (
@@ -766,37 +764,37 @@ const Sidebar: React.FC = () => {
                         : {},
                   }}
                 >
-                  {/* <FeedbackIcon
-                    sx={{
-                      fontSize: 20,
-                      mr: 1.5,
-                      color:
-                        selectedItem === "Feedback" ? "#FFFFFF" : "#000000",
-                    }}
-                  /> */}
-
                   <Box
-                    component={FeedbackIcon}
+                    data-tour="sidebar-feedback"
                     sx={{
-                      fontSize: 20,
-                      mr: 2,
-                      color:
-                        selectedItem === "Feedback" ? "#FFFFFF" : "#000000",
-                      "& path": {
-                        fill:
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <Box
+                      component={FeedbackIcon}
+                      sx={{
+                        fontSize: 20,
+                        mr: 2,
+                        color:
                           selectedItem === "Feedback" ? "#FFFFFF" : "#000000",
-                      }, // color fix for SVG path
-                    }}
-                  />
-                  <ListItemText
-                    primary="Feedback"
-                    primaryTypographyProps={{
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color:
-                        selectedItem === "Feedback" ? "#FFFFFF" : "#000000",
-                    }}
-                  />
+                        "& path": {
+                          fill:
+                            selectedItem === "Feedback" ? "#FFFFFF" : "#000000",
+                        },
+                      }}
+                    />
+                    <ListItemText
+                      primary="Feedback"
+                      primaryTypographyProps={{
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color:
+                          selectedItem === "Feedback" ? "#FFFFFF" : "#000000",
+                      }}
+                    />
+                  </Box>
                 </ListItemButton>
               </ListItem>
             </List>
@@ -814,6 +812,7 @@ const Sidebar: React.FC = () => {
           }}
         >
           <Box
+            data-tour="sidebar-create-project"
             sx={{
               display: "flex",
               alignItems: "center",

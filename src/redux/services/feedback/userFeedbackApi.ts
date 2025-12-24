@@ -1,5 +1,6 @@
 // src/redux/services/feedback/userFeedbackApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi"; // import centralized base query
 
 interface FeedbackRequest {
   session_id: string;
@@ -15,18 +16,13 @@ interface FeedbackResponse {
 
 export const userFeedbackApi = createApi({
   reducerPath: "userFeedbackApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
-  }),
+  baseQuery: baseApiQuery, // use centralized baseApiQuery
   endpoints: (builder) => ({
     sendUserFeedback: builder.mutation<FeedbackResponse, FeedbackRequest>({
       query: (feedbackData) => ({
-        url: "user-feedback",
+        url: "/feedback/customer-feedback", // endpoint path
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: feedbackData,
+        body: feedbackData, // body remains the same
       }),
     }),
   }),

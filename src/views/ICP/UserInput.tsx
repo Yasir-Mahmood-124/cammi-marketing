@@ -18,6 +18,7 @@ interface UserInputProps {
     onGenerate?: (prompt: string) => void;
     onRegenerate?: () => void;
     onConfirm?: () => void;
+    onTypingComplete?: () => void; // ✅ NEW: Callback when typing animation completes
 }
 
 const UserInput: React.FC<UserInputProps> = ({
@@ -28,7 +29,8 @@ const UserInput: React.FC<UserInputProps> = ({
     documentType,
     onGenerate,
     onRegenerate,
-    onConfirm
+    onConfirm,
+    onTypingComplete, // ✅ NEW
 }) => {
     const [inputValue, setInputValue] = useState('');
     const [displayedAnswer, setDisplayedAnswer] = useState('');
@@ -36,17 +38,17 @@ const UserInput: React.FC<UserInputProps> = ({
     const [sessionId, setSessionId] = useState<string | undefined>(undefined);
     const answerFieldRef = React.useRef<HTMLInputElement>(null);
 
-    // RTK Query mutations
     const [refine, { isLoading: isRefining }] = useRefineMutation();
     const [addQuestion, { isLoading: isAddingQuestion }] = useAddQuestionMutation();
 
-    // Typing animation effect
+    // ✅ UPDATED: Added typing completion callback
     useEffect(() => {
         if (!answer) {
             setDisplayedAnswer('');
             return;
         }
 
+        console.log('⌨️ [UserInput] Starting typing animation for answer:', answer.substring(0, 50) + '...');
         setIsTyping(true);
         setDisplayedAnswer('');
         let currentIndex = 0;
@@ -58,20 +60,29 @@ const UserInput: React.FC<UserInputProps> = ({
             } else {
                 setIsTyping(false);
                 clearInterval(typingInterval);
+                
+                // ✅ NEW: Notify parent that typing is complete
+                console.log('✅ [UserInput] Typing animation complete');
+                if (onTypingComplete) {
+                    // Small delay to ensure regenerate button is rendered
+                    setTimeout(() => {
+                        console.log('📢 [UserInput] Calling onTypingComplete callback');
+                        onTypingComplete();
+                    }, 100);
+                }
             }
         }, 10);
 
-        return () => clearInterval(typingInterval);
-    }, [answer]);
+        return () => {
+            clearInterval(typingInterval);
+        };
+    }, [answer, onTypingComplete]); // ✅ Added onTypingComplete to dependencies
 
-    // Auto-focus and position cursor at end when typing completes
     useEffect(() => {
         if (!isTyping && displayedAnswer && answerFieldRef.current) {
             const textField = answerFieldRef.current;
-            // Small delay to ensure the field is ready
             setTimeout(() => {
                 textField.focus();
-                // Set cursor position to the end
                 const length = displayedAnswer.length;
                 textField.setSelectionRange(length, length);
             }, 100);
@@ -81,10 +92,8 @@ const UserInput: React.FC<UserInputProps> = ({
     const handleSendClick = async () => {
         if (inputValue.trim()) {
             try {
-                // Combine question with user input
                 const fullPrompt = `${question}\n\n${inputValue.trim()}`;
 
-                // Call refine API
                 const refinePayload = {
                     prompt: fullPrompt,
                     ...(sessionId && { session_id: sessionId })
@@ -94,12 +103,10 @@ const UserInput: React.FC<UserInputProps> = ({
 
                 const refineResult = await refine(refinePayload).unwrap();
 
-                // Update session_id if returned
                 if (refineResult.session_id) {
                     setSessionId(refineResult.session_id);
                 }
 
-                // Update the answer with groq_response
                 if (onGenerate) {
                     onGenerate(refineResult.groq_response);
                 }
@@ -107,7 +114,6 @@ const UserInput: React.FC<UserInputProps> = ({
                 setInputValue('');
             } catch (error) {
                 console.error('Error generating answer:', error);
-                // You might want to show an error message to the user here
             }
         }
     };
@@ -115,7 +121,6 @@ const UserInput: React.FC<UserInputProps> = ({
     const handleRegenerateClick = async () => {
         if (displayedAnswer) {
             try {
-                // Use the current displayed answer as the prompt for regeneration
                 const refinePayload = {
                     prompt: `Regenerate and improve this answer: ${displayedAnswer}`,
                     ...(sessionId && { session_id: sessionId })
@@ -123,12 +128,10 @@ const UserInput: React.FC<UserInputProps> = ({
 
                 const refineResult = await refine(refinePayload).unwrap();
 
-                // Update session_id if returned
                 if (refineResult.session_id) {
                     setSessionId(refineResult.session_id);
                 }
 
-                // Update the answer with new groq_response
                 if (onGenerate) {
                     onGenerate(refineResult.groq_response);
                 }
@@ -145,7 +148,6 @@ const UserInput: React.FC<UserInputProps> = ({
     const handleConfirmClick = async () => {
         if (displayedAnswer && !isTyping) {
             try {
-                // Call addQuestion API
                 const addQuestionPayload = {
                     question_text: question,
                     answer_text: displayedAnswer,
@@ -156,13 +158,11 @@ const UserInput: React.FC<UserInputProps> = ({
 
                 console.log('Question and answer saved successfully');
 
-                // Call the original onConfirm callback
                 if (onConfirm) {
                     onConfirm();
                 }
             } catch (error) {
                 console.error('Error saving question and answer:', error);
-                // You might want to show an error message to the user here
             }
         }
     };
@@ -189,6 +189,7 @@ const UserInput: React.FC<UserInputProps> = ({
             margin: '0 auto',
         }}>
             <Box
+                
                 sx={{
                     backgroundColor: '#FAFAFA',
                     border: '2px solid #D2D2D2',
@@ -222,6 +223,7 @@ const UserInput: React.FC<UserInputProps> = ({
                 }}
             >
                 <Box
+                    data-tour="question-box"
                     sx={{
                         background: 'linear-gradient(#FAFAFA, #FAFAFA) padding-box, linear-gradient(135deg, #3EA3FF, #FF3C80) border-box',
                         border: '2px solid transparent',
@@ -258,7 +260,6 @@ const UserInput: React.FC<UserInputProps> = ({
                         </Typography>
                     </Box>
 
-                    {/* Show loading spinner when loading */}
                     {combinedLoading && (
                         <Box sx={{
                             display: 'flex',
@@ -272,7 +273,6 @@ const UserInput: React.FC<UserInputProps> = ({
                         </Box>
                     )}
 
-                    {/* Show answer field when there's content (either typing or complete) */}
                     {!combinedLoading && (displayedAnswer || isTyping) && (
                         <Box sx={{ marginBottom: '11px', marginLeft: '32px', width: 'calc(100% - 32px)' }}>
                             <TextField
@@ -325,7 +325,6 @@ const UserInput: React.FC<UserInputProps> = ({
                         </Box>
                     )}
 
-                    {/* Only show dividing line and buttons when typing is complete and answer exists */}
                     {!combinedLoading && !isTyping && displayedAnswer && (
                         <>
                             <Box
@@ -339,6 +338,7 @@ const UserInput: React.FC<UserInputProps> = ({
 
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Button
+                                    data-tour="regenerate-button"
                                     startIcon={<RefreshIcon sx={{ fontSize: '12px' }} />}
                                     onClick={handleRegenerateClick}
                                     disabled={!answer}
@@ -387,6 +387,7 @@ const UserInput: React.FC<UserInputProps> = ({
             </Box>
 
             <TextField
+                data-tour="user-input-field"
                 fullWidth
                 multiline
                 maxRows={3}

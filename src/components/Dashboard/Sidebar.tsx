@@ -53,7 +53,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
   const [selectedItem, setSelectedItem] = useState<string>("Dashboard");
   const [selectedParent, setSelectedParent] = useState<string>("");
-  // const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [open, setOpen] = useState(false);
   const [currentProject, setCurrentProject] = useState<CurrentProject | null>(
     null
@@ -69,6 +68,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     "Strategy Roadmap": "/dashboard/strategy-roadmap",
     "Messaging framework": "/dashboard/messaging-framework",
     "Brand identity": "/dashboard/brand-identity",
+    "Marketing Plan": "/dashboard/smp",
+    "Market Research": "/dashboard/mr",
+    "Messaging": "/dashboard/messaging",
+    "Brand": "/dashboard/brand",
     "Quarterly Plan": "/dashboard/quarterly-marketing-plan",
     "Content Strategy": "/dashboard/content-strategy",
     "Campaign Brief ": "/dashboard/campaign-brief",
@@ -138,6 +141,67 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const documentGenerationItems = [
+    {
+      text: "Clarify",
+      icon: Clarify,
+      subItems: [
+        "GTM Document",
+        "Ideal Customer Profile",
+        "Strategy Roadmap",
+        "Messaging framework",
+        "Brand identity",
+        "Marketing Plan",
+        "Market Research",
+        "Messaging",
+        "Brand",
+      ],
+    },
+    {
+      text: "Align",
+      icon: Align,
+      subItems: [
+        "Quarterly Plan",
+        "Content Strategy",
+        "Campaign Brief ",
+        "SEO/AEO Playbook",
+      ],
+    },
+    {
+      text: "Mobilize",
+      icon: Mobilize,
+      subItems: [
+        "Website landing page",
+        "Blog",
+        "Social Media Post",
+        "Email Templates",
+        "Case Studies",
+        "Sales Deck",
+        "One-pager",
+      ],
+    },
+    {
+      text: "Monitor",
+      icon: Moniter,
+      subItems: ["Dashboard"],
+    },
+    {
+      text: "Iterate",
+      icon: Iterate,
+      subItems: ["Recommendations", "Updated Assets"],
+    },
+  ];
+
+  const toolsItems = [
+    { text: "Brand Setup", icon: BrandSetup },
+    { text: "Lead Calculator", icon: LeadCalculator },
+    {
+      text: "Scheduler",
+      icon: Scheduler,
+      subItems: ["LinkedIn", "Calendar"],
+    },
+  ];
 
   // Update selected based on current pathname
   useEffect(() => {
@@ -256,16 +320,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     setSelectedItem(itemName);
     setSelectedParent(parentName);
 
-    // Close all open menus except the parent of the selected item
     if (parentName) {
-      // If there's a parent, keep only that parent open
       setOpenMenus({ [parentName]: true });
     } else {
-      // If no parent (Dashboard, Feedback), close all menus
       setOpenMenus({});
     }
 
-    // Navigate based on the route
     const route =
       documentRoutes[itemName] ||
       toolRoutes[itemName] ||
@@ -290,69 +350,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     loadCurrentProject();
   };
 
-  const documentGenerationItems = [
-    {
-      text: "Clarify",
-      icon: Clarify,
-      subItems: [
-        "GTM Document",
-        "Ideal Customer Profile",
-        "Strategy Roadmap",
-        "Messaging framework",
-        "Brand identity",
-      ],
-    },
-    {
-      text: "Align",
-      icon: Align,
-      subItems: [
-        "Quarterly Plan",
-        "Content Strategy",
-        "Campaign Brief ",
-        "SEO/AEO Playbook",
-      ],
-    },
-    {
-      text: "Mobilize",
-      icon: Mobilize,
-      subItems: [
-        "Website landing page",
-        "Blog",
-        "Social Media Post",
-        "Email Templates",
-        "Case Studies",
-        "Sales Deck",
-        "One-pager",
-      ],
-    },
-    {
-      text: "Monitor",
-      icon: Moniter,
-      subItems: ["Dashboard"],
-    },
-    {
-      text: "Iterate",
-      icon: Iterate,
-      subItems: ["Recommendations", "Updated Assets"],
-    },
-  ];
-
-  const toolsItems = [
-    {
-      text: "Brand Setup",
-      icon: BrandSetup,
-    },
-    {
-      text: "Lead Calculator",
-      icon: LeadCalculator,
-    },
-    {
-      text: "Scheduler",
-      icon: Scheduler,
-      subItems: ["LinkedIn", "Calendar"],
-    },
-  ];
-
   const renderIcon = (
     IconComponent: any,
     itemText: string,
@@ -376,9 +373,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           width: 24,
           height: 20,
           mr: isCollapsed ? 0 : 1.5,
-          "& path": {
-            fill: shouldBeColored,
-          },
+          "& path": { fill: shouldBeColored },
         }}
       />
     );
@@ -387,6 +382,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   return (
     <Drawer
       variant="permanent"
+      data-tour="sidebar"
       sx={{
         width: isCollapsed ? 70 : 240,
         flexShrink: 0,
@@ -435,9 +431,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
               borderRadius: isCollapsed ? "10px" : "8px",
               color: "#757575",
               transition: "background-color 0.2s ease",
-              "&:hover": {
-                backgroundColor: "#F0F0F0",
-              },
+              "&:hover": { backgroundColor: "#F0F0F0" },
             }}
           >
             {isCollapsed ? (
@@ -466,18 +460,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           </IconButton>
         </Box>
 
-        {/* Scrollable Content Area */}
+        {/* SCROLLABLE CONTENT AREA */}
         <Box
           sx={{
             flexGrow: 1,
             overflowY: "auto",
             overflowX: "hidden",
-            "&::-webkit-scrollbar": {
-              width: "6px",
-            },
-            "&::-webkit-scrollbar-track": {
-              backgroundColor: "transparent",
-            },
+            "&::-webkit-scrollbar": { width: "6px" },
+            "&::-webkit-scrollbar-track": { backgroundColor: "transparent" },
             "&::-webkit-scrollbar-thumb": {
               backgroundColor: "#BDBDBD",
               borderRadius: "3px",
@@ -487,11 +477,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             },
           }}
         >
-          {/* Main Menu */}
+          {/* Main Menu - Dashboard */}
           <List sx={{ px: isCollapsed ? 1 : 2, pt: 0, pb: 0 }}>
             <ListItem disablePadding>
               <Tooltip title={isCollapsed ? "Dashboard" : ""} placement="right">
                 <ListItemButton
+                  data-tour="sidebar-dashboard"
                   onClick={() => handleSubmenuClick("Dashboard", "", false)}
                   sx={{
                     borderRadius: 1,
@@ -596,6 +587,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                       placement="right"
                     >
                       <ListItemButton
+                        data-tour={`sidebar-${item.text.toLowerCase()}`}
                         onClick={() => handleMenuClick(item.text, true)}
                         sx={{
                           borderRadius: 1,
@@ -604,9 +596,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                           backgroundColor: "transparent",
                           position: "relative",
                           justifyContent: isCollapsed ? "center" : "flex-start",
-                          "&:hover": {
-                            backgroundColor: "#F5F5F5",
-                          },
+                          "&:hover": { backgroundColor: "#F5F5F5" },
                           "&::before":
                             selectedItem === item.text ||
                             selectedParent === item.text
@@ -625,7 +615,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         }}
                       >
                         {renderIcon(item.icon, item.text, true)}
-
                         {!isCollapsed && (
                           <>
                             <ListItemText
@@ -784,6 +773,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                       placement="right"
                     >
                       <ListItemButton
+                        data-tour={`sidebar-${item.text
+                          .toLowerCase()
+                          .replace(/\s+/g, "-")}`}
                         onClick={() =>
                           item.subItems
                             ? handleMenuClick(item.text, true)
@@ -989,6 +981,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                   placement="right"
                 >
                   <ListItemButton
+                    data-tour="sidebar-feedback"
                     onClick={() => handleSubmenuClick("Feedback", "", false)}
                     sx={{
                       borderRadius: 1,
@@ -1066,15 +1059,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
         {/* Bottom Project Info - Fixed at bottom */}
         {!isCollapsed && (
-          <Box
-            sx={
-              {
-                // px: 2,
-                // py: 1,
-              }
-            }
-          >
+          <Box>
             <Box
+              data-tour="sidebar-create-project"
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -1178,6 +1165,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             }}
           >
             <Box
+              data-tour="sidebar-create-project"
               sx={{
                 width: 40,
                 height: 40,
@@ -1220,7 +1208,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         }}
         BackdropProps={{
           sx: {
-            backgroundColor: "rgba(0, 0, 0, 0.15)", // Very subtle backdrop
+            backgroundColor: "rgba(0, 0, 0, 0.15)",
           },
         }}
       >

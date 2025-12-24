@@ -53,6 +53,11 @@ const Login = () => {
         const locale = searchParams.get("locale");
         const id = searchParams.get("id");
         const error = searchParams.get("error");
+        const dashboard_status = searchParams.get("dashboard_status");
+        const user_input_status = searchParams.get("user_input_status");
+        const final_preview_status = searchParams.get("final_preview_status");
+        const document_preview_status = searchParams.get("document_preview_status");
+
 
         // Handle error case
         if (error) {
@@ -80,6 +85,10 @@ const Login = () => {
             picture: picture,
             sub: sub,
             locale: locale,
+            dashboard_status: dashboard_status,
+            user_input_status: user_input_status,
+            final_preview_status: final_preview_status,
+            document_preview_status: document_preview_status,
           };
           localStorage.setItem("user", JSON.stringify(userData));
 
@@ -203,28 +212,6 @@ const Login = () => {
           backgroundPosition: "center",
         },
       }}
-
-      // sx={{
-      //   position: "relative",
-      //   minHeight: "100vh",
-      //   display: "flex",
-      //   overflow: "hidden",
-      //   // backgroundColor: "#EFF1F5",
-      //   // background:"linear-gradient(135deg, #E8EBF3 0%, #F5F7FB 50%, #E8ECF5 100%)",
-      //   // zIndex: 0,
-
-      //   "&::before": {
-      //     content: '""',
-      //     position: "absolute",
-      //     inset: 0,
-      //     backgroundImage: `url(${AuthBackground.src})`,
-      //     backgroundRepeat: "no-repeat",
-      //     // backgroundSize: "cover",
-      //     backgroundPosition: "center",
-      //     // opacity: 1, // Add opacity to make it subtle
-      //     zIndex: -1,
-      //   },
-      // }}
     >
       <Container
         maxWidth={false}

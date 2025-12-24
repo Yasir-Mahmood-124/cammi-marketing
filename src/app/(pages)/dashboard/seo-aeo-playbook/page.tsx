@@ -1,9 +1,10 @@
 import React from "react";
 import ComingSoon from "@/components/ComingSoon";
+import SeoAeoPlaybook from "@/assests/gif/SEOPlaybook.gif";
 
 const page = () => {
   return (
-    <ComingSoon />
+    <ComingSoon gifSrc={SeoAeoPlaybook} />
   );
 };
 

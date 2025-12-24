@@ -1,11 +1,12 @@
-// redux/services/linkedin/schedulePostApi.ts 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// redux/services/linkedin/schedulePostApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi";
 
 export interface SchedulePostRequest {
   sub: string;
   message: string;
   scheduled_time: string;
-  images?: { image: string }[]; // optional base64 images
+  images?: { image: string }[];
 }
 
 export interface SchedulePostResponse {
@@ -13,31 +14,26 @@ export interface SchedulePostResponse {
   scheduled_time_pkt: string;
   scheduled_time_utc: string;
   schedule_name: string;
-  id?: string; // if backend returns post id
-  [key: string]: any; // allow extra fields without error
+  id?: string;
+  [key: string]: any;
 }
 
 export const schedulePostApi = createApi({
   reducerPath: "schedulePostApi",
-  baseQuery: fetchBaseQuery({
-    // baseUrl: "https://s248gcnoqb.execute-api.us-east-1.amazonaws.com/test/",
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: baseApiQuery,
   endpoints: (builder) => ({
     schedulePost: builder.mutation<SchedulePostResponse, SchedulePostRequest>({
       query: (body) => ({
-        url: "schedule-status",
+        url: "/LinkedIn/linkedIn-schedule",
         method: "POST",
         body,
       }),
+
       transformResponse: (response: any) => {
         console.log("Schedule API Response:", response);
         return response;
       },
+
       transformErrorResponse: (response: any) => {
         console.error("Schedule API Error:", response);
         return response;

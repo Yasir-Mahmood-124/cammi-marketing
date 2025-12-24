@@ -8,16 +8,12 @@ interface Question {
 }
 
 interface GTMState {
-  view: "selection" | "questions" | "preview" | "documentsList";
+  view: "questions" | "preview";
   questions: Question[];
   currentQuestionIndex: number;
   answeredIds: number[];
   projectId: string;
   sessionId: string | undefined;
-  
-  // Document selection
-  selectedDocumentTypes: string[];
-  currentViewingDocument: string | null;
   
   // Document generation states
   isGenerating: boolean;
@@ -36,17 +32,18 @@ interface GTMState {
   // Flags for fetching
   shouldFetchUnanswered: boolean;
   shouldFetchAll: boolean;
+  
+  // 🆕 Reset tracker
+  resetTimestamp: number;
 }
 
 const initialState: GTMState = {
-  view: "selection",
+  view: "questions",
   questions: [],
   currentQuestionIndex: 0,
   answeredIds: [],
   projectId: "",
   sessionId: undefined,
-  selectedDocumentTypes: [],
-  currentViewingDocument: null,
   isGenerating: false,
   wsUrl: "",
   generatingProgress: 0,
@@ -59,6 +56,7 @@ const initialState: GTMState = {
   fileName: "",
   shouldFetchUnanswered: false,
   shouldFetchAll: false,
+  resetTimestamp: 0, // 🆕
 };
 
 const gtmSlice = createSlice({
@@ -67,14 +65,6 @@ const gtmSlice = createSlice({
   reducers: {
     setView: (state, action: PayloadAction<GTMState["view"]>) => {
       state.view = action.payload;
-    },
-    
-    setSelectedDocumentTypes: (state, action: PayloadAction<string[]>) => {
-      state.selectedDocumentTypes = action.payload;
-    },
-    
-    setCurrentViewingDocument: (state, action: PayloadAction<string | null>) => {
-      state.currentViewingDocument = action.payload;
     },
     
     setQuestions: (state, action: PayloadAction<Question[]>) => {
@@ -219,23 +209,22 @@ const gtmSlice = createSlice({
       state.shouldFetchAll = action.payload;
     },
     
+    // 🆕 Updated resetGTMState to preserve projectId and set timestamp
     resetGTMState: (state) => {
-      return initialState;
+      return {
+        ...initialState,
+        projectId: state.projectId, // Preserve project ID
+        resetTimestamp: Date.now(), // Set timestamp to trigger re-initialization
+      };
     },
     
+    // 🆕 Updated resetForNewDocument to set timestamp
     resetForNewDocument: (state) => {
-      // Clear localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('gtm_selectedDocumentTypes');
-      }
-      
-      state.view = "selection";
+      state.view = "questions";
       state.questions = [];
       state.currentQuestionIndex = 0;
       state.answeredIds = [];
       state.sessionId = undefined;
-      state.selectedDocumentTypes = [];
-      state.currentViewingDocument = null;
       state.isGenerating = false;
       state.generatingProgress = 0;
       state.generatingContent = "Waiting for Document Generation...";
@@ -247,14 +236,13 @@ const gtmSlice = createSlice({
       state.fileName = "";
       state.shouldFetchUnanswered = false;
       state.shouldFetchAll = false;
+      state.resetTimestamp = Date.now(); // Set timestamp to trigger re-initialization
     },
   },
 });
 
 export const {
   setView,
-  setSelectedDocumentTypes,
-  setCurrentViewingDocument,
   setQuestions,
   updateQuestionAnswer,
   updateCurrentQuestionAnswer,

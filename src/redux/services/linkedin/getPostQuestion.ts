@@ -1,5 +1,7 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// src/redux/services/linkedin/getPostQuestionsApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
 import Cookies from "js-cookie";
+import { baseApiQuery } from "../baseApi"; // ✅ import your base query
 
 interface GetPostQuestionsResponse {
   session_id: string;
@@ -9,13 +11,7 @@ interface GetPostQuestionsResponse {
 
 export const getPostQuestionsApi = createApi({
   reducerPath: "getPostQuestionsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev/",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: baseApiQuery, // ✅ use the shared baseApiQuery
   endpoints: (builder) => ({
     getPostQuestions: builder.query<GetPostQuestionsResponse | string, void>({
       query: () => {
@@ -42,7 +38,7 @@ export const getPostQuestionsApi = createApi({
         };
 
         return {
-          url: "get-post-questions",
+          url: "/schedular/get-post-questions",
           method: "POST",
           body,
         };

@@ -1,5 +1,6 @@
 // src/redux/services/webscrap/webscrapApi.ts
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseApiQuery } from '../baseApi';
 
 interface WebScrapRequest {
   session_id: string;
@@ -16,21 +17,14 @@ interface WebScrapResponse {
   model_id: string;
 }
 
+// ✅ Create API slice using shared baseApiQuery but with custom baseUrl
 export const webscrapApi = createApi({
   reducerPath: 'webscrapApi',
-
-  baseQuery: fetchBaseQuery({
-    baseUrl: 'https://lmsnmdd3clmpphnqy2gmhsjkd40qdogs.lambda-url.us-east-1.on.aws/',
-    prepareHeaders: (headers) => {
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
-  }),
-
+  baseQuery: baseApiQuery, // shared base query
   endpoints: (builder) => ({
     postWebScrap: builder.mutation<WebScrapResponse, WebScrapRequest>({
       query: (body) => ({
-        url: '',
+        url: '/brandsetup/web-scraping', // empty because baseUrl already points to Lambda URL
         method: 'POST',
         body,
       }),
@@ -38,4 +32,5 @@ export const webscrapApi = createApi({
   }),
 });
 
+// ✅ Export hooks for usage in components
 export const { usePostWebScrapMutation } = webscrapApi;

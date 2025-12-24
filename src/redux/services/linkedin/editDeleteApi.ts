@@ -1,4 +1,6 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+// src/redux/services/editDeleteApi.ts
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseApiQuery } from "../baseApi"; // centralized base query
 
 interface EditDeleteRequest {
   sub: string;
@@ -19,17 +21,11 @@ interface EditDeleteResponse {
 
 export const editDeleteApi = createApi({
   reducerPath: "editDeleteApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "https://o3uzr46ro5.execute-api.us-east-1.amazonaws.com/cammi-dev",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  baseQuery: baseApiQuery, // use centralized baseApiQuery
   endpoints: (builder) => ({
     editDelete: builder.mutation<EditDeleteResponse, EditDeleteRequest>({
-      query: (body) => ({
-        url: "/edit-delete",
+      query: (body: any) => ({
+        url: "/calendar/linkedin-edit-delete",
         method: "POST",
         body,
       }),

@@ -1,32 +1,49 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, Typography, CircularProgress, Menu, MenuItem, Alert } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import SaveIcon from '@mui/icons-material/Save';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import WarningIcon from '@mui/icons-material/Warning';
-import { useDownloadPdfMutation } from '@/redux/services/document/download-pdf';
-import { useSendReviewDocumentMutation } from '@/redux/services/common/send_review';
-import { useGetDocxFileMutation } from '@/redux/services/document/downloadApi';
-import { useDispatch } from 'react-redux';
-import { resetForNewDocument as resetIcp } from '@/redux/services/icp/icpSlice';
-import { resetForNewDocument as resetKmf } from '@/redux/services/kmf/kmfSlice';
-import { resetForNewDocument as resetBs } from '@/redux/services/bs/bsSlice';
-import { resetForNewDocument as resetSr } from '@/redux/services/sr/srSlice';
-import { setView, setShowDocumentPreview } from '@/redux/services/gtm/gtmSlice';
-import { AppDispatch } from '@/redux/store';
-import Cookies from 'js-cookie';
-import EditHeadingDialog from './EditHeadingDialog';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Box,
+  Button,
+  Typography,
+  CircularProgress,
+  Menu,
+  MenuItem,
+  Alert,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import SaveIcon from "@mui/icons-material/Save";
+import WarningIcon from "@mui/icons-material/Warning";
+import { useDownloadPdfMutation } from "@/redux/services/document/download-pdf";
+import { useSendReviewDocumentMutation } from "@/redux/services/common/send_review";
+import { useGetDocxFileMutation } from "@/redux/services/document/downloadApi";
+import { useDispatch } from "react-redux";
+import { resetForNewDocument as resetIcp } from "@/redux/services/icp/icpSlice";
+import { resetForNewDocument as resetKmf } from "@/redux/services/kmf/kmfSlice";
+import { resetForNewDocument as resetBs } from "@/redux/services/bs/bsSlice";
+import { resetForNewDocument as resetSr } from "@/redux/services/sr/srSlice";
+import { resetGTMState } from "@/redux/services/gtm/gtmSlice";
+import { resetSMPState } from "@/redux/services/smp/smpSlice";
+import { resetMRState } from "@/redux/services/mr/mrSlice";
+import { resetMessagingState } from "@/redux/services/messaging/messagingSlice";
+import { resetBrandState } from "@/redux/services/brand/brandSlice";
+import { AppDispatch } from "@/redux/store";
+import Cookies from "js-cookie";
+import EditHeadingDialog from "./EditHeadingDialog";
+import toast from "react-hot-toast";
 
 interface DocumentPreviewProps {
   docxBase64: string;
   fileName: string;
-  documentType: 'icp' | 'kmf' | 'bs' | 'sr' | 'gtm' | 
-    'gtm-gotomarket' | 'gtm-marketresearch' | 'gtm-brand' | 
-    'gtm-brandkeymessaging' | 'gtm-solution' | 'gtm-contentpillars' | 
-    'gtm-sales' | 'gtm-advice' | 'gtm-reporting';
+  documentType:
+    | "icp"
+    | "kmf"
+    | "bs"
+    | "sr"
+    | "gtm"
+    | "smp"
+    | "mr"
+    | "messaging"
+    | "brand";
 }
 
 interface TableOfContentsItem {
@@ -35,47 +52,47 @@ interface TableOfContentsItem {
   level: number;
 }
 
-const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName, documentType }) => {
+const DocumentPreview: React.FC<DocumentPreviewProps> = ({
+  docxBase64,
+  fileName,
+  documentType,
+}) => {
   const dispatch = useDispatch<AppDispatch>();
-  
-  const [currentDocxBase64, setCurrentDocxBase64] = useState<string>(docxBase64);
-  const [tableOfContents, setTableOfContents] = useState<TableOfContentsItem[]>([]);
-  const [activeSection, setActiveSection] = useState<string>('');
-  const [documentHtml, setDocumentHtml] = useState<string>('');
-  const [documentText, setDocumentText] = useState<string>('');
+
+  const [currentDocxBase64, setCurrentDocxBase64] =
+    useState<string>(docxBase64);
+  const [tableOfContents, setTableOfContents] = useState<TableOfContentsItem[]>(
+    []
+  );
+  const [activeSection, setActiveSection] = useState<string>("");
+  const [documentHtml, setDocumentHtml] = useState<string>("");
+  const [documentText, setDocumentText] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [hasEmptyContent, setHasEmptyContent] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedFormat, setSelectedFormat] = useState<'PDF' | 'DOCx' | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<"PDF" | "DOCx" | null>(
+    null
+  );
   const open = Boolean(anchorEl);
   const contentRef = useRef<HTMLDivElement>(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
 
   const [downloadPdf, { isLoading: isPdfLoading }] = useDownloadPdfMutation();
-  const [sendReview, { isLoading: isReviewLoading }] = useSendReviewDocumentMutation();
+  const [sendReview, { isLoading: isReviewLoading }] =
+    useSendReviewDocumentMutation();
   const [getDocxFile, { isLoading: isDownloading }] = useGetDocxFileMutation();
-
-  // 🔥 NEW: Check if document is GTM type
-  const isGTMDocument = (docType: string): boolean => {
-    return docType.startsWith('gtm-') || docType === 'gtm';
-  };
 
   const getDocumentDisplayName = (docType: string): string => {
     const labels: Record<string, string> = {
-      'icp': 'ICP',
-      'kmf': 'KMF',
-      'bs': 'BS',
-      'sr': 'SR',
-      'gtm': 'GTM',
-      'gtm-gotomarket': 'Go-to-Market Strategy',
-      'gtm-marketresearch': 'Market Research',
-      'gtm-brand': 'Brand',
-      'gtm-brandkeymessaging': 'Brand Key Messaging',
-      'gtm-solution': 'Solution',
-      'gtm-contentpillars': 'Content Pillars',
-      'gtm-sales': 'Sales',
-      'gtm-advice': 'Advice',
-      'gtm-reporting': 'Reporting',
+      icp: "ICP",
+      kmf: "KMF",
+      bs: "BS",
+      sr: "SR",
+      gtm: "GTM",
+      smp: "Strategy Marketing Plan",
+      mr: "Market Research",
+      messaging: "Messaging",
+      brand: "Brand",
     };
     return labels[docType] || docType.toUpperCase();
   };
@@ -87,69 +104,93 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
   useEffect(() => {
     const parseDocx = async () => {
       try {
-        console.log('📄 [DocumentPreview] Starting DOCX parse...');
-        console.log('📄 [DocumentPreview] Base64 length:', currentDocxBase64.length);
-        
-        const mammoth = await import('mammoth');
-        
+        console.log("📄 [DocumentPreview] Starting DOCX parse...");
+        console.log(
+          "📄 [DocumentPreview] Base64 length:",
+          currentDocxBase64.length
+        );
+
+        const mammoth = await import("mammoth");
+
         const binaryString = atob(currentDocxBase64);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-        
-        console.log('📄 [DocumentPreview] Converted to binary, size:', bytes.length);
-        
-        const result = await mammoth.convertToHtml({ arrayBuffer: bytes.buffer });
-        const textResult = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
-        
-        console.log('📄 [DocumentPreview] HTML result length:', result.value.length);
-        console.log('📄 [DocumentPreview] Text result length:', textResult.value.length);
-        console.log('📄 [DocumentPreview] Raw text preview:', textResult.value.substring(0, 500));
-        
+
+        console.log(
+          "📄 [DocumentPreview] Converted to binary, size:",
+          bytes.length
+        );
+
+        const result = await mammoth.convertToHtml({
+          arrayBuffer: bytes.buffer,
+        });
+        const textResult = await mammoth.extractRawText({
+          arrayBuffer: bytes.buffer,
+        });
+
+        console.log(
+          "📄 [DocumentPreview] HTML result length:",
+          result.value.length
+        );
+        console.log(
+          "📄 [DocumentPreview] Text result length:",
+          textResult.value.length
+        );
+        console.log(
+          "📄 [DocumentPreview] Raw text preview:",
+          textResult.value.substring(0, 500)
+        );
+
         setDocumentText(textResult.value);
-        
+
         // Check if content is mostly empty or placeholder
         const contentCheck = textResult.value.toLowerCase();
-        const hasPlaceholder = contentCheck.includes('[content missing]') || 
-                              contentCheck.includes('content missing') ||
-                              contentCheck.trim().length < 100;
-        
+        const hasPlaceholder =
+          contentCheck.includes("[content missing]") ||
+          contentCheck.includes("content missing") ||
+          contentCheck.trim().length < 100;
+
         if (hasPlaceholder) {
-          console.warn('⚠️ [DocumentPreview] Document appears to have placeholder or empty content');
+          console.warn(
+            "⚠️ [DocumentPreview] Document appears to have placeholder or empty content"
+          );
           setHasEmptyContent(true);
         }
-        
+
         const parser = new DOMParser();
-        const doc = parser.parseFromString(result.value, 'text/html');
-        const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        
-        console.log('📄 [DocumentPreview] Found headings:', headings.length);
-        
+        const doc = parser.parseFromString(result.value, "text/html");
+        const headings = doc.querySelectorAll("h1, h2, h3, h4, h5, h6");
+
+        console.log("📄 [DocumentPreview] Found headings:", headings.length);
+
         const toc: TableOfContentsItem[] = [];
         headings.forEach((heading, index) => {
           const level = parseInt(heading.tagName.substring(1));
-          const text = heading.textContent || '';
+          const text = heading.textContent || "";
           const id = `heading-${index}`;
           heading.id = id;
-          
+
           console.log(`📄 [DocumentPreview] Heading ${index}: ${text}`);
           toc.push({ id, text, level });
         });
-        
+
         setDocumentHtml(doc.body.innerHTML);
         setTableOfContents(toc);
-        
+
         if (toc.length > 0) {
           setActiveSection(toc[0].id);
         }
-        
-        console.log('✅ [DocumentPreview] Parse complete!');
+
+        console.log("✅ [DocumentPreview] Parse complete!");
         setIsLoading(false);
       } catch (error) {
-        console.error('❌ [DocumentPreview] Error parsing DOCX:', error);
+        console.error("❌ [DocumentPreview] Error parsing DOCX:", error);
         setIsLoading(false);
-        toast.error('Failed to parse document. Please try downloading it instead.');
+        toast.error(
+          "Failed to parse document. Please try downloading it instead."
+        );
       }
     };
 
@@ -163,7 +204,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
       const scrollPosition = contentRef.current.scrollTop + 100;
 
       for (let i = tableOfContents.length - 1; i >= 0; i--) {
-        const element = contentRef.current.querySelector(`#${tableOfContents[i].id}`) as HTMLElement;
+        const element = contentRef.current.querySelector(
+          `#${tableOfContents[i].id}`
+        ) as HTMLElement;
         if (element && element.offsetTop <= scrollPosition) {
           setActiveSection(tableOfContents[i].id);
           break;
@@ -173,8 +216,8 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
 
     const container = contentRef.current;
     if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
+      container.addEventListener("scroll", handleScroll);
+      return () => container.removeEventListener("scroll", handleScroll);
     }
   }, [tableOfContents]);
 
@@ -186,27 +229,27 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
     setAnchorEl(null);
   };
 
-  const handleFormatSelect = async (format: 'PDF' | 'DOCx') => {
+  const handleFormatSelect = async (format: "PDF" | "DOCx") => {
     setSelectedFormat(format);
     handleMenuClose();
 
-    if (format === 'DOCx') {
+    if (format === "DOCx") {
       await handleDownloadDocx();
-    } else if (format === 'PDF') {
+    } else if (format === "PDF") {
       await handleDownloadPdf();
     }
   };
 
   const handleDownloadDocx = async () => {
     try {
-      toast.loading('Preparing document...', { id: 'docx-download' });
+      toast.loading("Preparing document...", { id: "docx-download" });
 
       const savedToken = Cookies.get("token");
       const project_id = JSON.parse(
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
 
-      console.log('🔄 [DocumentPreview] Fetching latest DOCX from server...');
+      console.log("🔄 [DocumentPreview] Fetching latest DOCX from server...");
 
       const response = await getDocxFile({
         session_id: savedToken || "",
@@ -214,7 +257,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
         project_id: project_id,
       }).unwrap();
 
-      console.log('✅ [DocumentPreview] Latest DOCX received from server');
+      console.log("✅ [DocumentPreview] Latest DOCX received from server");
 
       setCurrentDocxBase64(response.docxBase64);
 
@@ -223,38 +266,38 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      
-      const blob = new Blob([bytes], { 
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+
+      const blob = new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = fileName || 'document.docx';
+      link.download = fileName || "document.docx";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success('Document downloaded!', { id: 'docx-download' });
-      console.log('✅ [DocumentPreview] DOCX downloaded successfully');
+      toast.success("Document downloaded!", { id: "docx-download" });
+      console.log("✅ [DocumentPreview] DOCX downloaded successfully");
     } catch (error) {
-      console.error('❌ [DocumentPreview] Failed to download DOCX:', error);
-      toast.error('Failed to download document', { id: 'docx-download' });
+      console.error("❌ [DocumentPreview] Failed to download DOCX:", error);
+      toast.error("Failed to download document", { id: "docx-download" });
     }
   };
 
   const handleDownloadPdf = async () => {
     try {
-      toast.loading('Generating PDF...', { id: 'pdf-download' });
-      
+      toast.loading("Generating PDF...", { id: "pdf-download" });
+
       const savedToken = Cookies.get("token");
       const project_id = JSON.parse(
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
 
       const response = await downloadPdf({
-        session_id: savedToken || '',
+        session_id: savedToken || "",
         project_id: project_id,
         document_type: documentType,
       }).unwrap();
@@ -270,19 +313,19 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
       });
 
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = response.fileName || 'document.pdf';
+      link.download = response.fileName || "document.pdf";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
-      toast.success('PDF downloaded!', { id: 'pdf-download' });
+
+      toast.success("PDF downloaded!", { id: "pdf-download" });
     } catch (error) {
-      console.error('❌ [DocumentPreview] Failed to download PDF:', error);
-      toast.dismiss('pdf-download');
-      toast.error('Failed to generate PDF');
+      console.error("❌ [DocumentPreview] Failed to download PDF:", error);
+      toast.dismiss("pdf-download");
+      toast.error("Failed to generate PDF");
     }
   };
 
@@ -297,67 +340,86 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
 
+      toast.loading("Submitting document for review...", {
+        id: "review-submit",
+      });
+
       const response = await sendReview({
-        session_id: savedToken || '',
+        session_id: savedToken || "",
         project_id: project_id,
         document_type: documentType,
-        document_text: documentText,
+        document_text: currentDocxBase64,
       }).unwrap();
 
-      toast.success('Document submitted for review successfully!');
-    } catch (error) {
-      console.error('❌ [DocumentPreview] Failed to submit for review:', error);
-      toast.error('Failed to submit document for review');
-    }
-  };
+      toast.success("Document submitted for review successfully!", {
+        id: "review-submit",
+      });
+    } catch (error: any) {
+      console.log("⚠️ [DocumentPreview] Submit for review response:", error);
 
-  // 🔥 NEW: Handle Back button click (only for GTM documents)
-  const handleBack = () => {
-    console.log('⬅️ [DocumentPreview] Back button clicked - returning to document list');
-    dispatch(setShowDocumentPreview(false));
-    dispatch(setView('documentsList'));
-    toast.success('Returned to documents list');
-  };
-
-  // 🔥 UPDATED: Modified Save behavior
-  const handleSave = () => {
-    const displayName = getDocumentDisplayName(documentType);
-    
-    if (isGTMDocument(documentType)) {
-      // 🔥 For GTM documents: Go back to document list (don't reset state)
-      console.log(`💾 [DocumentPreview] ${displayName} document saved - returning to documents list`);
-      toast.success("Document saved successfully!");
-      dispatch(setShowDocumentPreview(false));
-      dispatch(setView('documentsList'));
-    } else {
-      // For other documents: Reset state (current behavior)
-      console.log(`💾 [DocumentPreview] ${displayName} document saved - resetting state`);
-      toast.success("Document saved successfully!");
-      
-      if (documentType === 'icp') {
-        dispatch(resetIcp());
-      } else if (documentType === 'kmf') {
-        dispatch(resetKmf());
-      } else if (documentType === 'bs') {
-        dispatch(resetBs());
-      } else if (documentType === 'sr') {
-        dispatch(resetSr());
+      if (error?.status === 400 && error?.data?.message) {
+        toast.dismiss("review-submit");
+        toast(error.data.message, {
+          duration: 4000,
+          icon: "ℹ️",
+        });
+      } else {
+        console.error(
+          "❌ [DocumentPreview] Failed to submit for review:",
+          error
+        );
+        toast.error("Failed to submit document for review", {
+          id: "review-submit",
+        });
       }
     }
   };
 
+  const handleSave = () => {
+    const displayName = getDocumentDisplayName(documentType);
+    console.log(
+      `💾 [DocumentPreview] ${displayName} document saved - resetting state`
+    );
+
+    toast.success("Document saved successfully!");
+
+    // Reset state for all document types
+    if (documentType === "icp") {
+      dispatch(resetIcp());
+    } else if (documentType === "kmf") {
+      dispatch(resetKmf());
+    } else if (documentType === "bs") {
+      dispatch(resetBs());
+    } else if (documentType === "sr") {
+      dispatch(resetSr());
+    } else if (documentType === "gtm") {
+      dispatch(resetGTMState());
+    } else if (documentType === "smp") {
+      dispatch(resetSMPState());
+    } else if (documentType === "mr") {
+      dispatch(resetMRState());
+    } else if (documentType === "messaging") {
+      dispatch(resetMessagingState());
+    } else if (documentType === "brand") {
+      dispatch(resetBrandState());
+    }
+
+    // Reload the page after resetting states
+    window.location.reload();
+  };
+
   const scrollToSection = (id: string) => {
     setActiveSection(id);
-    
+
     if (contentRef.current) {
       const element = contentRef.current.querySelector(`#${id}`) as HTMLElement;
-      
+
       if (element) {
         const elementTop = element.offsetTop;
-        
+
         contentRef.current.scrollTo({
           top: elementTop - 20,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }
     }
@@ -370,7 +432,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
         localStorage.getItem("currentProject") || "{}"
       ).project_id;
 
-      console.log('🔄 [DocumentPreview] Fetching latest document after edit...');
+      console.log(
+        "🔄 [DocumentPreview] Fetching latest document after edit..."
+      );
 
       const response = await getDocxFile({
         session_id: savedToken || "",
@@ -378,10 +442,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
         project_id: project_id,
       }).unwrap();
 
-      console.log('✅ [DocumentPreview] Latest document received');
+      console.log("✅ [DocumentPreview] Latest document received");
 
       setCurrentDocxBase64(response.docxBase64);
-      setHasEmptyContent(false); // Reset warning
+      setHasEmptyContent(false);
 
       setIsLoading(true);
       setDocumentHtml("");
@@ -397,7 +461,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
       const mammoth = await import("mammoth");
 
       const result = await mammoth.convertToHtml({ arrayBuffer: bytes.buffer });
-      const textResult = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+      const textResult = await mammoth.extractRawText({
+        arrayBuffer: bytes.buffer,
+      });
 
       setDocumentText(textResult.value);
 
@@ -428,179 +494,169 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
 
   if (isLoading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        backgroundColor: '#EFF1F5'
-      }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          backgroundColor: "#EFF1F5",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
   }
 
   return (
-    <Box sx={{ 
-      height: '100%', 
-      display: 'flex', 
-      flexDirection: 'column',
-      backgroundColor: '#EFF1F5',
-      overflow: 'hidden'
-    }}>
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        backgroundColor: "#EFF1F5",
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
-      <Box sx={{ 
-        padding: '16px 40px',
-        backgroundColor: '#EFF1F5',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-      }}>
-        {/* 🔥 NEW: Back Button (only for GTM documents) */}
-        {isGTMDocument(documentType) && (
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={handleBack}
-            sx={{
-              position: 'absolute',
-              left: '40px',
-              fontFamily: 'Poppins',
-              fontSize: '13px',
-              fontWeight: 600,
-              padding: '6px 16px',
-              borderRadius: '6px',
-              border: '2px solid #3EA3FF',
-              backgroundColor: '#FFF',
-              color: '#3EA3FF',
-              textTransform: 'none',
-              '&:hover': {
-                border: '2px solid #3EA3FF',
-                backgroundColor: '#F0F8FF',
-              },
-            }}
-          >
-            Back
-          </Button>
-        )}
-        
-        <Typography sx={{ 
-          fontFamily: 'Poppins',
-          fontSize: '20px',
-          fontWeight: 600,
-          color: '#333',
-          textAlign: 'center'
-        }}>
+      <Box
+        sx={{
+          padding: "16px 40px",
+          backgroundColor: "#EFF1F5",
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+        }}
+      >
+        <Typography
+          sx={{
+            fontFamily: "Poppins",
+            fontSize: "20px",
+            fontWeight: 600,
+            color: "#333",
+            textAlign: "center",
+          }}
+        >
           {getDocumentDisplayName(documentType)} Document
         </Typography>
       </Box>
 
       {/* Warning Banner for Empty/Placeholder Content */}
       {hasEmptyContent && (
-        <Box sx={{ padding: '0 40px', marginBottom: '8px' }}>
-          <Alert 
-            severity="warning" 
+        <Box sx={{ padding: "0 40px", marginBottom: "8px" }}>
+          <Alert
+            severity="warning"
             icon={<WarningIcon />}
             sx={{
-              fontFamily: 'Poppins',
-              fontSize: '13px',
-              backgroundColor: '#FFF3CD',
-              color: '#856404',
-              border: '1px solid #FFEAA7',
-              borderRadius: '8px',
+              fontFamily: "Poppins",
+              fontSize: "13px",
+              backgroundColor: "#FFF3CD",
+              color: "#856404",
+              border: "1px solid #FFEAA7",
+              borderRadius: "8px",
             }}
           >
-            This document appears to contain placeholder content. The generation process may not have completed successfully. 
-            You can try downloading the document or regenerating it.
+            This document appears to contain placeholder content. The generation
+            process may not have completed successfully. You can try downloading
+            the document or regenerating it.
           </Alert>
         </Box>
       )}
 
       {/* Main Content */}
-      <Box sx={{ 
-        flex: 1,
-        display: 'flex',
-        gap: '20px',
-        padding: '16px 40px',
-        overflow: 'hidden',
-        minHeight: 0
-      }}>
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          gap: "20px",
+          padding: "16px 40px",
+          overflow: "hidden",
+          minHeight: 0,
+        }}
+      >
         {/* Table of Contents - Left Side */}
-        <Box sx={{ 
-          width: '280px',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '16px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          flexShrink: 0
-        }}>
-          <Typography sx={{ 
-            fontFamily: 'Poppins',
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#333',
-            marginBottom: '12px',
-            paddingBottom: '10px',
-            borderBottom: '2px solid #3EA3FF'
-          }}>
+        <Box
+          sx={{
+            width: "280px",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "12px",
+            padding: "16px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            flexShrink: 0,
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: "Poppins",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#333",
+              marginBottom: "12px",
+              paddingBottom: "10px",
+              borderBottom: "2px solid #3EA3FF",
+            }}
+          >
             Document tabs
           </Typography>
-          
-          <Box 
+
+          <Box
             id="toc-container"
-            sx={{ 
+            sx={{
               flex: 1,
-              overflowY: 'auto',
-              direction: 'rtl',
-              paddingLeft: '12px',
-              '&::-webkit-scrollbar': {
-                width: '6px',
+              overflowY: "auto",
+              direction: "rtl",
+              paddingLeft: "12px",
+              "&::-webkit-scrollbar": {
+                width: "6px",
               },
-              '&::-webkit-scrollbar-track': {
-                backgroundColor: '#F5F5F5',
-                borderRadius: '3px',
+              "&::-webkit-scrollbar-track": {
+                backgroundColor: "#F5F5F5",
+                borderRadius: "3px",
               },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: '#CCCCCC',
-                borderRadius: '3px',
-                '&:hover': {
-                  backgroundColor: '#AAAAAA',
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "#CCCCCC",
+                borderRadius: "3px",
+                "&:hover": {
+                  backgroundColor: "#AAAAAA",
                 },
               },
-            }}>
-            <Box sx={{ direction: 'ltr' }}>
+            }}
+          >
+            <Box sx={{ direction: "ltr" }}>
               {tableOfContents.map((item) => (
                 <Box
                   key={item.id}
                   id={`toc-${item.id}`}
                   onClick={() => scrollToSection(item.id)}
                   sx={{
-                    padding: '10px 12px',
+                    padding: "10px 12px",
                     paddingLeft: `${12 + (item.level - 1) * 16}px`,
-                    marginBottom: '4px',
-                    marginLeft: '8px',
-                    cursor: 'pointer',
-                    borderRadius: '6px',
-                    backgroundColor: 'transparent',
-                    transition: 'background-color 0.2s ease',
-                    '&:hover': {
-                      backgroundColor: '#F5F5F5',
+                    marginBottom: "4px",
+                    marginLeft: "8px",
+                    cursor: "pointer",
+                    borderRadius: "6px",
+                    backgroundColor: "transparent",
+                    transition: "background-color 0.2s ease",
+                    "&:hover": {
+                      backgroundColor: "#F5F5F5",
                     },
                   }}
                 >
-                  <Typography sx={{
-                    fontFamily: 'Poppins',
-                    fontSize: item.level === 1 ? '13px' : '12px',
-                    fontWeight: item.level === 1 ? 600 : 400,
-                    color: activeSection === item.id ? '#3EA3FF' : '#555',
-                    lineHeight: '1.4',
-                    transition: 'color 0.2s ease',
-                  }}>
+                  <Typography
+                    sx={{
+                      fontFamily: "Poppins",
+                      fontSize: item.level === 1 ? "13px" : "12px",
+                      fontWeight: item.level === 1 ? 600 : 400,
+                      color: activeSection === item.id ? "#3EA3FF" : "#555",
+                      lineHeight: "1.4",
+                      transition: "color 0.2s ease",
+                    }}
+                  >
                     {item.text}
                   </Typography>
                 </Box>
@@ -610,90 +666,91 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
         </Box>
 
         {/* Document Content - Right Side */}
-        <Box 
+        <Box
           ref={contentRef}
-          sx={{ 
+          sx={{
             flex: 1,
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            padding: '24px',
-            paddingRight: '28px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-            overflowY: 'auto',
-            position: 'relative',
-            '&::-webkit-scrollbar': {
-              width: '10px',
+            backgroundColor: "#FFFFFF",
+            borderRadius: "12px",
+            padding: "24px",
+            paddingRight: "28px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            overflowY: "auto",
+            position: "relative",
+            "&::-webkit-scrollbar": {
+              width: "10px",
             },
-            '&::-webkit-scrollbar-track': {
-              backgroundColor: '#D9D9D9',
-              borderRadius: '6px',
+            "&::-webkit-scrollbar-track": {
+              backgroundColor: "#D9D9D9",
+              borderRadius: "6px",
             },
-            '&::-webkit-scrollbar-thumb': {
-              backgroundColor: '#FFFFFF',
-              borderRadius: '6px',
-              border: '1px solid #D9D9D9',
-              '&:hover': {
-                backgroundColor: '#F5F5F5',
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: "#FFFFFF",
+              borderRadius: "6px",
+              border: "1px solid #D9D9D9",
+              "&:hover": {
+                backgroundColor: "#F5F5F5",
               },
             },
-          }}>
-          <Box 
+          }}
+        >
+          <Box
             sx={{
-              fontFamily: 'Poppins',
-              paddingRight: '20px',
-              '& h1': {
-                fontFamily: 'Poppins',
-                fontSize: '24px',
+              fontFamily: "Poppins",
+              paddingRight: "20px",
+              "& h1": {
+                fontFamily: "Poppins",
+                fontSize: "24px",
                 fontWeight: 700,
-                color: '#333',
-                marginBottom: '12px',
-                marginTop: '16px',
-                scrollMarginTop: '20px',
+                color: "#333",
+                marginBottom: "12px",
+                marginTop: "16px",
+                scrollMarginTop: "20px",
               },
-              '& h2': {
-                fontFamily: 'Poppins',
-                fontSize: '18px',
+              "& h2": {
+                fontFamily: "Poppins",
+                fontSize: "18px",
                 fontWeight: 600,
-                color: '#3EA3FF',
-                marginBottom: '10px',
-                marginTop: '14px',
-                scrollMarginTop: '20px',
+                color: "#3EA3FF",
+                marginBottom: "10px",
+                marginTop: "14px",
+                scrollMarginTop: "20px",
               },
-              '& h3': {
-                fontFamily: 'Poppins',
-                fontSize: '16px',
+              "& h3": {
+                fontFamily: "Poppins",
+                fontSize: "16px",
                 fontWeight: 600,
-                color: '#555',
-                marginBottom: '10px',
-                marginTop: '12px',
-                scrollMarginTop: '20px',
+                color: "#555",
+                marginBottom: "10px",
+                marginTop: "12px",
+                scrollMarginTop: "20px",
               },
-              '& h4, & h5, & h6': {
-                fontFamily: 'Poppins',
+              "& h4, & h5, & h6": {
+                fontFamily: "Poppins",
                 fontWeight: 600,
-                color: '#555',
-                marginBottom: '8px',
-                marginTop: '10px',
-                scrollMarginTop: '20px',
+                color: "#555",
+                marginBottom: "8px",
+                marginTop: "10px",
+                scrollMarginTop: "20px",
               },
-              '& p': {
-                fontFamily: 'Poppins',
-                fontSize: '14px',
-                lineHeight: '1.6',
-                color: '#666',
-                marginBottom: '10px',
+              "& p": {
+                fontFamily: "Poppins",
+                fontSize: "14px",
+                lineHeight: "1.6",
+                color: "#666",
+                marginBottom: "10px",
               },
-              '& ul, & ol': {
-                fontFamily: 'Poppins',
-                fontSize: '14px',
-                lineHeight: '1.6',
-                color: '#666',
-                marginLeft: '20px',
-                marginBottom: '10px',
+              "& ul, & ol": {
+                fontFamily: "Poppins",
+                fontSize: "14px",
+                lineHeight: "1.6",
+                color: "#666",
+                marginLeft: "20px",
+                marginBottom: "10px",
               },
-              '& strong': {
+              "& strong": {
                 fontWeight: 600,
-                color: '#333',
+                color: "#333",
               },
             }}
             dangerouslySetInnerHTML={{ __html: documentHtml }}
@@ -702,51 +759,57 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
       </Box>
 
       {/* Action Buttons */}
-      <Box sx={{ 
-        padding: '12px 40px',
-        backgroundColor: '#FFFFFF',
-        borderTop: '1px solid #E0E0E0',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '16px',
-        alignItems: 'center',
-        flexShrink: 0
-      }}>
+      <Box
+        sx={{
+          padding: "12px 40px",
+          backgroundColor: "#FFFFFF",
+          borderTop: "1px solid #E0E0E0",
+          display: "flex",
+          justifyContent: "center",
+          gap: "16px",
+          alignItems: "center",
+          flexShrink: 0,
+        }}
+      >
         {/* Download Button with Dropdown */}
-        <Box sx={{ position: 'relative', display: 'flex' }}>
+        <Box sx={{ position: "relative", display: "flex" }}>
           <Button
             variant="outlined"
-            endIcon={<KeyboardArrowUpIcon sx={{ 
-              fontSize: '20px',
-              backgroundColor: '#000',
-              color: '#FFF',
-              borderRadius: '50%',
-              padding: '2px'
-            }} />}
+            endIcon={
+              <KeyboardArrowUpIcon
+                sx={{
+                  fontSize: "20px",
+                  backgroundColor: "#000",
+                  color: "#FFF",
+                  borderRadius: "50%",
+                  padding: "2px",
+                }}
+              />
+            }
             onClick={handleDownloadClick}
             disabled={isPdfLoading || isDownloading}
             sx={{
-              fontFamily: 'Poppins',
-              fontSize: '13px',
+              fontFamily: "Poppins",
+              fontSize: "13px",
               fontWeight: 600,
-              padding: '8px 20px',
-              borderRadius: '6px',
-              border: '2px solid #3EA3FF',
-              backgroundColor: '#FFF',
-              color: '#000',
-              textTransform: 'none',
-              '&:hover': {
-                border: '2px solid #3EA3FF',
-                backgroundColor: '#F8F8F8',
+              padding: "8px 20px",
+              borderRadius: "6px",
+              border: "2px solid #3EA3FF",
+              backgroundColor: "#FFF",
+              color: "#000",
+              textTransform: "none",
+              "&:hover": {
+                border: "2px solid #3EA3FF",
+                backgroundColor: "#F8F8F8",
               },
-              '&:disabled': {
-                border: '2px solid #ccc',
-                backgroundColor: '#F5F5F5',
-                color: '#999',
+              "&:disabled": {
+                border: "2px solid #ccc",
+                backgroundColor: "#F5F5F5",
+                color: "#999",
               },
             }}
           >
-            {isPdfLoading || isDownloading ? 'Downloading...' : 'Download'}
+            {isPdfLoading || isDownloading ? "Downloading..." : "Download"}
           </Button>
 
           <Menu
@@ -754,47 +817,47 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
             open={open}
             onClose={handleMenuClose}
             anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
+              vertical: "top",
+              horizontal: "center",
             }}
             transformOrigin={{
-              vertical: 'bottom',
-              horizontal: 'center',
+              vertical: "bottom",
+              horizontal: "center",
             }}
             PaperProps={{
               sx: {
-                borderRadius: '10px',
-                border: '1px solid #D2D2D2',
-                backgroundColor: '#FFF',
-                minWidth: '120px',
-                marginTop: '-8px',
+                borderRadius: "10px",
+                border: "1px solid #D2D2D2",
+                backgroundColor: "#FFF",
+                minWidth: "120px",
+                marginTop: "-8px",
               },
             }}
           >
             <MenuItem
-              onClick={() => handleFormatSelect('PDF')}
+              onClick={() => handleFormatSelect("PDF")}
               sx={{
-                fontFamily: 'Poppins',
-                fontSize: '12px',
-                padding: '10px 20px',
-                justifyContent: 'center',
-                '&:hover': {
-                  backgroundColor: '#D9D9D980',
+                fontFamily: "Poppins",
+                fontSize: "12px",
+                padding: "10px 20px",
+                justifyContent: "center",
+                "&:hover": {
+                  backgroundColor: "#D9D9D980",
                 },
               }}
             >
               PDF
             </MenuItem>
-            
+
             <MenuItem
-              onClick={() => handleFormatSelect('DOCx')}
+              onClick={() => handleFormatSelect("DOCx")}
               sx={{
-                fontFamily: 'Poppins',
-                fontSize: '12px',
-                padding: '10px 20px',
-                justifyContent: 'center',
-                '&:hover': {
-                  backgroundColor: '#D9D9D980',
+                fontFamily: "Poppins",
+                fontSize: "12px",
+                padding: "10px 20px",
+                justifyContent: "center",
+                "&:hover": {
+                  backgroundColor: "#D9D9D980",
                 },
               }}
             >
@@ -809,18 +872,18 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
           startIcon={<EditIcon />}
           onClick={handleEdit}
           sx={{
-            fontFamily: 'Poppins',
-            fontSize: '13px',
+            fontFamily: "Poppins",
+            fontSize: "13px",
             fontWeight: 600,
-            padding: '8px 20px',
-            borderRadius: '6px',
-            border: '2px solid #3EA3FF',
-            backgroundColor: '#FFF',
-            color: '#000',
-            textTransform: 'none',
-            '&:hover': {
-              border: '2px solid #3EA3FF',
-              backgroundColor: '#F8F8F8',
+            padding: "8px 20px",
+            borderRadius: "6px",
+            border: "2px solid #3EA3FF",
+            backgroundColor: "#FFF",
+            color: "#000",
+            textTransform: "none",
+            "&:hover": {
+              border: "2px solid #3EA3FF",
+              backgroundColor: "#F8F8F8",
             },
           }}
         >
@@ -838,37 +901,49 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
 
         {/* Submit for Review Button */}
         <Button
+          data-tour="submit-for-review"
           variant="outlined"
           onClick={handleSubmitForReview}
           disabled={isReviewLoading}
           sx={{
-            fontFamily: 'Poppins',
-            fontSize: '13px',
+            fontFamily: "Poppins",
+            fontSize: "13px",
             fontWeight: 600,
-            padding: '8px 20px',
-            borderRadius: '6px',
-            background: 'linear-gradient(#FFF, #FFF) padding-box, linear-gradient(135deg, #3EA3FF, #FF3C80) border-box',
-            border: '2px solid transparent',
-            color: '#333',
-            textTransform: 'none',
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: '8px',
-            '&:hover': {
-              background: 'linear-gradient(#F8F8F8, #F8F8F8) padding-box, linear-gradient(135deg, #3EA3FF, #FF3C80) border-box',
+            padding: "8px 20px",
+            borderRadius: "6px",
+            background:
+              "linear-gradient(#FFF, #FFF) padding-box, linear-gradient(135deg, #3EA3FF, #FF3C80) border-box",
+            border: "2px solid transparent",
+            color: "#333",
+            textTransform: "none",
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "8px",
+            "&:hover": {
+              background:
+                "linear-gradient(#F8F8F8, #F8F8F8) padding-box, linear-gradient(135deg, #3EA3FF, #FF3C80) border-box",
             },
-            '&:disabled': {
+            "&:disabled": {
               opacity: 0.6,
             },
           }}
         >
-          <span>{isReviewLoading ? 'Submitting...' : 'Submit for review'}</span>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <Typography sx={{ fontFamily: 'Poppins', fontSize: '11px', color: '#3EA3FF', fontWeight: 600 }}>
+          <span>{isReviewLoading ? "Submitting..." : "Submit for review"}</span>
+          <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <Typography
+              sx={{
+                fontFamily: "Poppins",
+                fontSize: "11px",
+                color: "#3EA3FF",
+                fontWeight: 600,
+              }}
+            >
               25
             </Typography>
-            <AccountBalanceWalletIcon sx={{ fontSize: '12px', color: '#3EA3FF' }} />
+            <AccountBalanceWalletIcon
+              sx={{ fontSize: "12px", color: "#3EA3FF" }}
+            />
           </Box>
         </Button>
 
@@ -878,18 +953,18 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({ docxBase64, fileName,
           startIcon={<SaveIcon />}
           onClick={handleSave}
           sx={{
-            fontFamily: 'Poppins',
-            fontSize: '13px',
+            fontFamily: "Poppins",
+            fontSize: "13px",
             fontWeight: 600,
-            padding: '8px 20px',
-            borderRadius: '6px',
-            background: 'linear-gradient(135deg, #3EA3FF, #FF3C80)',
-            color: '#FFF',
-            textTransform: 'none',
-            boxShadow: '0 3px 8px rgba(62, 163, 255, 0.3)',
-            '&:hover': {
-              background: 'linear-gradient(135deg, #2E8FE6, #E6356D)',
-              boxShadow: '0 4px 12px rgba(62, 163, 255, 0.4)',
+            padding: "8px 20px",
+            borderRadius: "6px",
+            background: "linear-gradient(135deg, #3EA3FF, #FF3C80)",
+            color: "#FFF",
+            textTransform: "none",
+            boxShadow: "0 3px 8px rgba(62, 163, 255, 0.3)",
+            "&:hover": {
+              background: "linear-gradient(135deg, #2E8FE6, #E6356D)",
+              boxShadow: "0 4px 12px rgba(62, 163, 255, 0.4)",
             },
           }}
         >

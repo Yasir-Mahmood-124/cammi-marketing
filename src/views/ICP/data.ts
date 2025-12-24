@@ -188,6 +188,66 @@ export const unifiedHeadingData: UnifiedDocumentData = {
     ],
   },
   
+  // 🔥 NEW: Additional Document Types
+  smp: {
+    "Strategy Marketing Plan": [
+      "Introduction",
+      "Business Model Risks",
+      "Business Goals",
+      "Mission Statement",
+      "Vision Statement",
+      "Prospect",
+      "Target Market",
+      "Marketing Objectives",
+      "Marketing Strategies",
+      "Tactics and Action Plans",
+      "What Success Looks Like",
+      "Metrics That Matter",
+    ],
+  },
+  icp2: {
+    "Ideal Customer Profile": [
+      "Quote of ICP",
+      "Psychographics",
+      "Demographics",
+    ],
+  },
+  mr: {
+    "Market Research": [
+      "Needs Analysis",
+      "Market Size Analysis",
+      "Market Trend Analysis",
+      "Competitive Analysis",
+      "Market Research Summary",
+      "Situational Analysis",
+    ],
+  },
+  messaging: {
+    "Messaging Document": [
+      "Unmet Needs and Challenges",
+      "Value Proposition",
+      "Value Proposition (Short)",
+      "Features",
+      "Benefits",
+      "Differentiators with Proof Points",
+      "What We Do and How We Do It",
+      "Voice and Tone",
+      "Storytelling",
+      "Tagline",
+    ],
+  },
+  brand: {
+    "Brand Guidelines": [
+      "Introduction",
+      "Logo Usage",
+      "Color Palette",
+      "Typography",
+      "Imagery",
+      "Brand Voice and Tone",
+      "Trademarks and Copyrights",
+    ],
+  },
+  
   // Other document types
   icp: {
     ICP: [
@@ -251,6 +311,11 @@ export const getDocumentTypeDisplayName = (docType: string): string => {
     "gtm-advice": "Advice",
     "gtm-reporting": "Reporting",
     "gtm-targetmarket": "Target Market",
+    smp: "Strategy Marketing Plan",
+    icp2: "Ideal Customer Profile",
+    mr: "Market Research",
+    messaging: "Messaging Document",
+    brand: "Brand Guidelines",
     icp: "Ideal Customer Profile",
     kmf: "Key Messaging Framework",
     bs: "Brand Story",

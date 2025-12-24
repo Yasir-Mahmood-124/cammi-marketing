@@ -13,11 +13,13 @@ import toast from "react-hot-toast";
 interface GeneratedDocumentsListProps {
   selectedDocumentTypes: string[];
   onDocumentClick: (documentType: string) => void;
+  onSaveAll: () => Promise<void>; // 🔥 NEW: Add callback prop
 }
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   "gtm-gotomarket": "Go-to-Market Strategy",
   "gtm-marketresearch": "Market Research",
+  "gtm-targetmarket": "Target Market",
   "gtm-brand": "Brand",
   "gtm-brandkeymessaging": "Brand Key Messaging",
   "gtm-solution": "Solution",
@@ -28,8 +30,10 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 };
 
 const DOCUMENT_TYPE_DESCRIPTIONS: Record<string, string> = {
-  "gtm-gotomarket": "Comprehensive strategy for product launch and market entry",
+  "gtm-gotomarket":
+    "Comprehensive strategy for product launch and market entry",
   "gtm-marketresearch": "In-depth analysis of market trends and opportunities",
+  "gtm-targetmarket": "Detailed analysis of target customer segments and personas",
   "gtm-brand": "Brand identity and positioning guidelines",
   "gtm-brandkeymessaging": "Core messaging framework and value propositions",
   "gtm-solution": "Solution architecture and implementation details",
@@ -42,21 +46,34 @@ const DOCUMENT_TYPE_DESCRIPTIONS: Record<string, string> = {
 const GeneratedDocumentsList: React.FC<GeneratedDocumentsListProps> = ({
   selectedDocumentTypes,
   onDocumentClick,
+  onSaveAll,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  // 🔥 NEW: Handle Save All - Reset state and return to selection
-  const handleSaveAll = () => {
-    console.log("💾 [GeneratedDocumentsList] Save All clicked - resetting state");
-    
-    toast.success("All documents saved successfully!");
-    
-    // Reset the entire GTM state (returns to selection view)
-    dispatch(resetForNewDocument());
-    
-    console.log("✅ [GeneratedDocumentsList] State reset complete - returned to selection");
+  // 🔥 UPDATED: Handle Save All - Call parent handler
+  const handleSaveAll = async () => {
+    console.log("💾 [GeneratedDocumentsList] Save All clicked");
+
+    try {
+      setIsSaving(true);
+      await onSaveAll(); // 🔥 Call parent handler to save all documents
+
+      toast.success("All documents saved successfully!");
+
+      // Reset the entire GTM state (returns to selection view)
+      dispatch(resetForNewDocument());
+
+      console.log(
+        "✅ [GeneratedDocumentsList] State reset complete - returned to selection"
+      );
+    } catch (error) {
+      console.error("❌ [Save All] Error:", error);
+      toast.error("Failed to save some documents. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
-
   return (
     <Box
       sx={{
@@ -190,7 +207,8 @@ const GeneratedDocumentsList: React.FC<GeneratedDocumentsListProps> = ({
                   marginBottom: "12px",
                 }}
               >
-                {DOCUMENT_TYPE_DESCRIPTIONS[docType] || "Click to view document"}
+                {DOCUMENT_TYPE_DESCRIPTIONS[docType] ||
+                  "Click to view document"}
               </Typography>
 
               {/* Ready Badge */}
@@ -238,25 +256,34 @@ const GeneratedDocumentsList: React.FC<GeneratedDocumentsListProps> = ({
             variant="contained"
             startIcon={<SaveIcon />}
             onClick={handleSaveAll}
+            disabled={isSaving} // 🔥 Disable while saving
             sx={{
               fontFamily: "Poppins",
               fontSize: "14px",
               fontWeight: 600,
               padding: "12px 32px",
               borderRadius: "10px",
-              background: "linear-gradient(135deg, #3EA3FF, #FF3C80)",
+              background: isSaving
+                ? "#ccc"
+                : "linear-gradient(135deg, #3EA3FF, #FF3C80)",
               color: "#FFF",
               textTransform: "none",
               boxShadow: "0 4px 12px rgba(62, 163, 255, 0.3)",
               "&:hover": {
-                background: "linear-gradient(135deg, #2E8FE6, #E6356D)",
+                background: isSaving
+                  ? "#ccc"
+                  : "linear-gradient(135deg, #2E8FE6, #E6356D)",
                 boxShadow: "0 6px 16px rgba(62, 163, 255, 0.4)",
-                transform: "translateY(-2px)",
+                transform: isSaving ? "none" : "translateY(-2px)",
+              },
+              "&:disabled": {
+                background: "#ccc",
+                color: "#999",
               },
               transition: "all 0.3s ease",
             }}
           >
-            Save All
+            {isSaving ? "Saving..." : "Save All"}
           </Button>
         </Box>
 
@@ -278,7 +305,8 @@ const GeneratedDocumentsList: React.FC<GeneratedDocumentsListProps> = ({
               textAlign: "center",
             }}
           >
-            💡 <strong>Tip:</strong> You can view, edit, and download each document individually, or click "Save All" to finish
+            💡 <strong>Tip:</strong> You can view, edit, and download each
+            document individually, or click "Save All" to finish
           </Typography>
         </Box>
       </Box>

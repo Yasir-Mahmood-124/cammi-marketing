@@ -2,6 +2,10 @@
   "name": "caami-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
@@ -18,15 +22,15 @@
     "@mui/x-date-pickers": "^8.14.1",
     "@reduxjs/toolkit": "^2.9.0",
     "dayjs": "^1.11.18",
+    "driver.js": "^1.4.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.548.0",
     "mammoth": "^1.11.0",
     "next": "15.5.3",
     "notistack": "^3.0.2",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.5.0",
+    "react-joyride": "^2.9.3",
     "react-redux": "^9.2.0",
     "recharts": "^3.3.0",
     "redux-persist": "^6.0.0",
@@ -43,6 +47,8 @@
     "@types/recharts": "^1.8.29",
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
     "typescript": "^5"
   }
 }
