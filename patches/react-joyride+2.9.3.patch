@@ -1,0 +1,119 @@
+diff --git a/node_modules/react-joyride/dist/index.mjs b/node_modules/react-joyride/dist/index.mjs
+index b5925d5..e6dacbb 100644
+--- a/node_modules/react-joyride/dist/index.mjs
++++ b/node_modules/react-joyride/dist/index.mjs
+@@ -393,7 +393,7 @@ function replaceLocaleContent(input, step, steps) {
+ function shouldScroll(options) {
+   const { isFirstStep, lifecycle, previousLifecycle, scrollToFirstStep, step, target } = options;
+   return !step.disableScrolling && (!isFirstStep || scrollToFirstStep || lifecycle === LIFECYCLE.TOOLTIP) && step.placement !== "center" && (!step.isFixed || !hasPosition(target)) && // fixed steps don't need to scroll
+-  previousLifecycle !== lifecycle && [LIFECYCLE.BEACON, LIFECYCLE.TOOLTIP].includes(lifecycle);
++    previousLifecycle !== lifecycle && [LIFECYCLE.BEACON, LIFECYCLE.TOOLTIP].includes(lifecycle);
+ }
+ 
+ // src/modules/step.ts
+@@ -1192,7 +1192,9 @@ var JoyrideOverlay = class extends React2.Component {
+ 
+ // src/components/Portal.tsx
+ import * as React3 from "react";
+-import * as ReactDOM from "react-dom";
++// import * as ReactDOM from "react-dom";
++import { createRoot } from 'react-dom/client';
++
+ var JoyridePortal = class extends React3.Component {
+   constructor() {
+     super(...arguments);
+@@ -1219,35 +1221,89 @@ var JoyridePortal = class extends React3.Component {
+     }
+   }
+   componentWillUnmount() {
++    // if (!canUseDOM() || !this.node) {
++    //   return;
++    // }
++    // if (!isReact16) {
++    //   ReactDOM.unmountComponentAtNode(this.node);
++    // }
++    // if (this.node.parentNode === document.body) {
++    //   document.body.removeChild(this.node);
++    //   this.node = null;
++    // }
++
+     if (!canUseDOM() || !this.node) {
+       return;
+     }
+-    if (!isReact16) {
+-      ReactDOM.unmountComponentAtNode(this.node);
++
++    // Unmount React 18 root if it exists
++    if (this.node._root) {
++      this.node._root.unmount();
++      this.node._root = null;
+     }
++
+     if (this.node.parentNode === document.body) {
+       document.body.removeChild(this.node);
+       this.node = null;
+     }
++
+   }
+   renderReact15() {
++    // if (!canUseDOM()) {
++    //   return;
++    // }
++    // const { children } = this.props;
++    // if (this.node) {
++    //   ReactDOM.unstable_renderSubtreeIntoContainer(this, children, this.node);
++    // }
++
+     if (!canUseDOM()) {
+       return;
+     }
++
+     const { children } = this.props;
++
+     if (this.node) {
+-      ReactDOM.unstable_renderSubtreeIntoContainer(this, children, this.node);
++      // Create root once
++      if (!this.node._root) {
++        this.node._root = createRoot(this.node);
++      }
++
++      // Render/update children
++      this.node._root.render(children);
+     }
++
+   }
+   renderReact16() {
+-    if (!canUseDOM() || !isReact16) {
++    // if (!canUseDOM() || !isReact16) {
++    //   return null;
++    // }
++    // const { children } = this.props;
++    // if (!this.node) {
++    //   return null;
++    // }
++    // return ReactDOM.createPortal(children, this.node);
++
++    if (!canUseDOM()) {
+       return null;
+     }
++
+     const { children } = this.props;
++
+     if (!this.node) {
+       return null;
+     }
+-    return ReactDOM.createPortal(children, this.node);
++
++    // Create root once
++    if (!this.node._root) {
++      this.node._root = createRoot(this.node);
++    }
++
++    // Render children into the node
++    this.node._root.render(children);
++
++    return null;
++
+   }
+   render() {
+     if (!isReact16) {
