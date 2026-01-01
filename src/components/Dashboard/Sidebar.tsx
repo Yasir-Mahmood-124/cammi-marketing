@@ -12,7 +12,7 @@ import {
   Collapse,
   IconButton,
   Tooltip,
-  Dialog
+  Dialog,
 } from "@mui/material";
 
 import { useRouter, usePathname } from "next/navigation";
@@ -34,6 +34,7 @@ import {
   ClosedTab,
   OpenTab,
   CammiHead,
+  HelpIcon,
 } from "@/assests/icons";
 import CreateProject from "./CreateProject";
 
@@ -70,8 +71,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     "Brand identity": "/dashboard/brand-identity",
     "Marketing Plan": "/dashboard/smp",
     "Market Research": "/dashboard/mr",
-    "Messaging": "/dashboard/messaging",
-    "Brand": "/dashboard/brand",
+    Messaging: "/dashboard/messaging",
+    Brand: "/dashboard/brand",
     "Quarterly Plan": "/dashboard/quarterly-marketing-plan",
     "Content Strategy": "/dashboard/content-strategy",
     "Campaign Brief ": "/dashboard/campaign-brief",
@@ -100,6 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
   // Map Feedback labels to routes
   const feedbackRoutes: Record<string, string> = {
     Feedback: "/dashboard/feedback",
+    Help: "/dashboard/help",
   };
 
   // Check if project exists in localStorage
@@ -1044,6 +1046,80 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                           fontWeight: 500,
                           color:
                             selectedItem === "Feedback" ? "#FFFFFF" : "#000000",
+                        }}
+                      />
+                    )}
+                  </ListItemButton>
+                </Tooltip>
+              </ListItem>
+
+              {/* ADD THIS HELP SECTION HERE */}
+              <ListItem disablePadding>
+                <Tooltip title={isCollapsed ? "Help" : ""} placement="right">
+                  <ListItemButton
+                    data-tour="sidebar-help"
+                    onClick={() => handleSubmenuClick("Help", "", false)}
+                    sx={{
+                      borderRadius: 1,
+                      mb: 0.15,
+                      py: 0.3,
+                      backgroundColor:
+                        isCollapsed || selectedItem !== "Help"
+                          ? "transparent"
+                          : "#3EA3FF",
+                      position: "relative",
+                      justifyContent: isCollapsed ? "center" : "flex-start",
+                      "&:hover": {
+                        backgroundColor:
+                          selectedItem === "Help" && !isCollapsed
+                            ? "#3EA3FF"
+                            : "#F5F5F5",
+                      },
+                      "&::before":
+                        selectedItem === "Help"
+                          ? {
+                              content: '""',
+                              position: "absolute",
+                              left: -8,
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              width: "4px",
+                              height: "20px",
+                              backgroundColor: "#3EA3FF",
+                              borderRadius: "0 4px 4px 0",
+                            }
+                          : {},
+                    }}
+                  >
+                    <Box
+                      component={HelpIcon}
+                      sx={{
+                        fontSize: 20,
+                        mr: isCollapsed ? 0 : 2,
+                        color:
+                          isCollapsed && selectedItem === "Help"
+                            ? "#3EA3FF"
+                            : selectedItem === "Help"
+                            ? "#FFFFFF"
+                            : "#000000",
+                        "& path": {
+                          fill:
+                            isCollapsed && selectedItem === "Help"
+                              ? "#3EA3FF"
+                              : selectedItem === "Help"
+                              ? "#FFFFFF"
+                              : "#000000",
+                        },
+                      }}
+                    />
+                    {!isCollapsed && (
+                      <ListItemText
+                        primary="Help"
+                        primaryTypographyProps={{
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color:
+                            selectedItem === "Help" ? "#FFFFFF" : "#000000",
                         }}
                       />
                     )}

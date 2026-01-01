@@ -61,7 +61,7 @@ import { deleteDocumentApi } from "./services/document/deleteDocumentApi";
 import { documentInfoApi } from "./services/document/documentInfoApi";
 import { getGtmDocumentApi } from "./services/document/getGtmDocument";
 import { onboardingStatusApi } from "./services/onboarding/onboadingStatus";
-
+import { helpApi } from "./services/help/helpApi";
 
 // ==================== REDUX PERSIST CONFIGURATION ====================
 
@@ -336,6 +336,7 @@ const rootReducer = combineReducers({
   [documentInfoApi.reducerPath]: documentInfoApi.reducer,
   [getGtmDocumentApi.reducerPath]: getGtmDocumentApi.reducer,
   [onboardingStatusApi.reducerPath]: onboardingStatusApi.reducer,
+  [helpApi.reducerPath]: helpApi.reducer,
 });
 
 // ==================== STORE CONFIGURATION ====================
@@ -393,7 +394,8 @@ export const store = configureStore({
       .concat(deleteDocumentApi.middleware)
       .concat(documentInfoApi.middleware)
       .concat(getGtmDocumentApi.middleware)
-      .concat(onboardingStatusApi.middleware),
+      .concat(onboardingStatusApi.middleware)
+      .concat(helpApi.middleware),
 });
 
 export const persistor = persistStore(store);
